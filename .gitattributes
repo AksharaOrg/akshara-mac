@@ -1,0 +1,13 @@
+* text=auto
+
+*.png binary
+*.icns binary
+*.tif binary
+*.tsv text working-tree-encoding=UTF-8
+*.m text
+*.h text
+*.swift text
+*.sh text eol=lf
+*.plist text
+*.strings text
+*.md text

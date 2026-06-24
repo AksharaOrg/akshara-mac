@@ -1,0 +1,9 @@
+build/
+dist/
+*.dSYM/
+.DS_Store
+._*
+.codex/
+.claude/
+.cursor/
+.windsurf/

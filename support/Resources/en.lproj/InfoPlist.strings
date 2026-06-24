@@ -1,0 +1,6 @@
+CFBundleDisplayName = "Akshara";
+CFBundleName = "Akshara";
+CFBundleShortVersionString = "Akshara 0.1.0";
+com.local.inputmethod.Akshara = "Akshara";
+com.local.inputmethod.Akshara.Phonetic = "Akshara - Phonetic";
+com.local.inputmethod.Akshara.SLS1134 = "Akshara - Wijesekara";
