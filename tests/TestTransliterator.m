@@ -84,6 +84,8 @@ int main(void) {
     ok = expectPhonetic(@"ka", @"ක") && ok;
     ok = expectPhonetic(@"k", @"ක්") && ok;
     ok = expectPhonetic(@"kii", @"කී") && ok;
+    ok = expectPhonetic(@"kramaya", @"ක්‍රමය") && ok;
+    ok = expectPhonetic(@"priya", @"ප්‍රිය") && ok;
     ok = expectSLSOrder(@"ෙකා", @"කො") && ok;
     ok = expectSLSOrder(@"ෙකා්", @"කෝ") && ok;
     ok = expectSLSOrder(@"ෙක්", @"කේ") && ok;

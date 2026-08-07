@@ -109,6 +109,17 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       if (vowelKey && vowelSigns[vowelKey] != nil) {
         [out appendString:vowelSigns[vowelKey]];
         i += vowelKey.length;
+      } else if (i < input.length &&
+                 [[input substringWithRange:NSMakeRange(i, 1)] isEqualToString:@"r"]) {
+        // A consonant followed by r is a rakaranshaya, which requires a ZWJ
+        // between the virama and ර for the correct Sinhala shaping.
+        [out appendString:@"්‍ර"];
+        i++;
+        vowelKey = [self matchFrom:input at:i keys:[self vowelKeys]];
+        if (vowelKey && vowelSigns[vowelKey] != nil) {
+          [out appendString:vowelSigns[vowelKey]];
+          i += vowelKey.length;
+        }
       } else {
         [out appendString:@"්"];
       }
