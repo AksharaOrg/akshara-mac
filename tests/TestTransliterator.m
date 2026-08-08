@@ -21,6 +21,58 @@ static BOOL expectSLSOrder(NSString *input, NSString *expected) {
   return YES;
 }
 
+static BOOL expectSLSMarkedOrder(NSString *input, NSString *expected) {
+  NSString *actual = [SinhalaTransliterator markedSLSInputOrder:input];
+  if (![actual isEqualToString:expected]) {
+    fprintf(stderr, "FAIL SLS marked %s: expected %s, got %s\n",
+            input.UTF8String, expected.UTF8String, actual.UTF8String);
+    return NO;
+  }
+  return YES;
+}
+
+static BOOL expectSLSProgression(NSString *input, NSArray<NSString *> *expected) {
+  if (input.length != expected.count) {
+    fprintf(stderr, "FAIL SLS progression fixture length for %s\n", input.UTF8String);
+    return NO;
+  }
+
+  BOOL ok = YES;
+  for (NSUInteger length = 1; length <= input.length; length++) {
+    NSString *prefix = [input substringToIndex:length];
+    NSString *actual = [SinhalaTransliterator markedSLSInputOrder:prefix];
+    NSString *wanted = expected[length - 1];
+    if (![actual isEqualToString:wanted]) {
+      fprintf(stderr, "FAIL SLS progression %s at %lu: expected %s, got %s\n",
+              input.UTF8String, (unsigned long)length,
+              wanted.UTF8String, actual.UTF8String);
+      ok = NO;
+    }
+  }
+  return ok;
+}
+
+static BOOL expectPhoneticProgression(NSString *input, NSArray<NSString *> *expected) {
+  if (input.length != expected.count) {
+    fprintf(stderr, "FAIL phonetic progression fixture length for %s\n", input.UTF8String);
+    return NO;
+  }
+
+  BOOL ok = YES;
+  for (NSUInteger length = 1; length <= input.length; length++) {
+    NSString *prefix = [input substringToIndex:length];
+    NSString *actual = [SinhalaTransliterator transliteratePhonetic:prefix];
+    NSString *wanted = expected[length - 1];
+    if (![actual isEqualToString:wanted]) {
+      fprintf(stderr, "FAIL phonetic progression %s at %lu: expected %s, got %s\n",
+              input.UTF8String, (unsigned long)length,
+              wanted.UTF8String, actual.UTF8String);
+      ok = NO;
+    }
+  }
+  return ok;
+}
+
 static BOOL expectSLSKey(NSString *key, BOOL shifted, BOOL altGr, NSString *expected) {
   NSString *actual = [SinhalaTransliterator slsCharacterForInput:key shifted:shifted altGr:altGr];
   if (![actual isEqualToString:expected]) {
@@ -102,6 +154,20 @@ int main(void) {
     ok = expectSLSOrder(@"ඔෟ", @"ඖ") && ok;
     ok = expectSLSOrder(@"ෙෙක", @"කෛ") && ok;
     ok = expectSLSOrder(@"ෙෙකෙ", @"කෛ‌ෙ") && ok;
+    ok = expectSLSMarkedOrder(@"ෙ", @"") && ok;
+    ok = expectSLSMarkedOrder(@"ෙෙ", @"") && ok;
+    ok = expectSLSMarkedOrder(@"ෙව", @"වෙ") && ok;
+    ok = expectSLSMarkedOrder(@"ෙෙකෙ", @"කෛ") && ok;
+    ok = expectSLSProgression(@"අැ", (@[@"අ", @"ඇ"])) && ok;
+    ok = expectSLSProgression(@"අා", (@[@"අ", @"ආ"])) && ok;
+    ok = expectSLSProgression(@"ෙකා්", (@[@"", @"කෙ", @"කො", @"කෝ"])) && ok;
+    ok = expectSLSProgression(@"ක", (@[@"ක", @"ක්‍ර"])) && ok;
+    ok = expectSLSProgression(@"ක", (@[@"ක", @"ක්‍ය"])) && ok;
+    ok = expectSLSProgression(@"ක", (@[@"ක", @"ර්‍ක"])) && ok;
+    ok = expectSLSProgression(@"කෂ", (@[@"ක", @"ක", @"ක්‍ෂ"])) && ok;
+    ok = expectSLSProgression(@"ෙවනව", (@[@"", @"වෙ", @"වෙන", @"වෙනව"])) && ok;
+    ok = expectSLSOrder(@"ෙවනව", @"වෙනව") && ok;
+    ok = expectPhoneticProgression(@"amma", (@[@"අ", @"අම්", @"අම්ම්", @"අම්ම"])) && ok;
     ok = expectSLSOrder(@"ගෘෘ", @"ගෲ") && ok;
     ok = expectSLSOrder(@"ගං", @"ගං") && ok;
     ok = expectSLSOrder(@"ගඃ", @"ගඃ") && ok;

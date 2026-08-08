@@ -33,7 +33,7 @@
 				<key>TISIntendedLanguage</key>
 				<string>si</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
-				<string>AksharaMenu.tif</string>
+				<string>AksharaMenuWhite.tif</string>
 				<key>tsInputModeDefaultStateKey</key>
 				<true/>
 				<key>tsInputModeIsVisibleKey</key>
@@ -54,7 +54,7 @@
 				<key>TISIntendedLanguage</key>
 				<string>si</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
-				<string>AksharaMenu.tif</string>
+				<string>AksharaMenuWhite.tif</string>
 				<key>tsInputModeDefaultStateKey</key>
 				<true/>
 				<key>tsInputModeIsVisibleKey</key>
@@ -75,7 +75,7 @@
 				<key>TISIntendedLanguage</key>
 				<string>si</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
-				<string>AksharaMenu.tif</string>
+				<string>AksharaMenuWhite.tif</string>
 				<key>tsInputModeDefaultStateKey</key>
 				<true/>
 				<key>tsInputModeIsVisibleKey</key>

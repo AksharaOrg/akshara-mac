@@ -102,7 +102,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   } else if (mode == AksharaInputModePhonetic) {
     return [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
   }
-  return [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
+  return [SinhalaTransliterator markedSLSInputOrder:self.rawBuffer];
 }
 
 - (void)clearComposition {
@@ -113,7 +113,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
   NSMutableString *text = [NSMutableString string];
   if (self.rawBuffer.length > 0) {
-    [text appendString:[self markedString]];
+    NSString *composed = [self isPhoneticMode]
+        ? [SinhalaTransliterator transliteratePhonetic:self.rawBuffer]
+        : [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
+    [text appendString:composed];
   }
   if (suffix.length > 0) {
     [text appendString:suffix];
@@ -154,7 +157,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     NSString *mapped = [SinhalaTransliterator slsCharacterForInput:lookup shifted:shifted altGr:altGr];
     if ([SinhalaTransliterator isSinhalaInputUnit:mapped]) {
       [self.rawBuffer appendString:mapped];
-      [self updateComposition];
+      if ([self markedString].length > 0) {
+        [self updateComposition];
+      }
     } else {
       [self commitBufferWithSuffix:mapped client:sender];
     }

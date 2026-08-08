@@ -613,4 +613,19 @@ static NSString * const SLSTokenYansaya = @"\uE005";
   return [out precomposedStringWithCanonicalMapping];
 }
 
++ (NSString *)markedSLSInputOrder:(NSString *)input {
+  NSString *normalized = [self normalizeSLSInputOrder:input];
+  NSString *pendingKombuwa = @"\u200Cෙ";
+  NSUInteger visibleLength = normalized.length;
+
+  while (visibleLength >= pendingKombuwa.length &&
+         [[normalized substringWithRange:NSMakeRange(visibleLength - pendingKombuwa.length,
+                                                     pendingKombuwa.length)]
+             isEqualToString:pendingKombuwa]) {
+    visibleLength -= pendingKombuwa.length;
+  }
+
+  return [normalized substringToIndex:visibleLength];
+}
+
 @end
