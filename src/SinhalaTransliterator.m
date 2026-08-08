@@ -23,10 +23,72 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       @"n": @"න", @"p": @"ප", @"b": @"බ", @"m": @"ම",
       @"y": @"ය", @"r": @"ර", @"l": @"ල", @"L": @"ළ",
       @"v": @"ව", @"w": @"ව", @"s": @"ස", @"h": @"හ",
-      @"f": @"ෆ"
+      @"f": @"ෆ", @"R": @"ර", @"Y": @"ය"
     };
   });
   return map;
+}
+
++ (NSDictionary<NSString *, NSString *> *)smartConsonants {
+  static NSDictionary *map;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    map = @{
+      @"ng": @"ඞ", @"gn": @"ඥ", @"ny": @"ඤ",
+      @"kh": @"ඛ", @"gh": @"ඝ", @"ch": @"ඡ", @"jh": @"ඣ",
+      @"Th": @"ඨ", @"Dh": @"ඪ", @"th": @"ත", @"dh": @"ද",
+      @"ph": @"ඵ", @"bh": @"භ", @"sh": @"ශ", @"Sh": @"ෂ",
+      @"k": @"ක", @"g": @"ග", @"c": @"ච", @"j": @"ජ",
+      @"T": @"ට", @"D": @"ඩ", @"N": @"ණ", @"t": @"ට", @"d": @"ඩ",
+      @"n": @"න", @"p": @"ප", @"b": @"බ", @"m": @"ම",
+      @"y": @"ය", @"r": @"ර", @"l": @"ල", @"L": @"ළ",
+      @"v": @"ව", @"w": @"ව", @"s": @"ස", @"h": @"හ",
+      @"f": @"ෆ", @"R": @"ර", @"Y": @"ය"
+    };
+  });
+  return map;
+}
+
++ (NSDictionary<NSString *, NSString *> *)smartVowels {
+  static NSDictionary *map;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    map = @{
+      @"aee": @"ඈ", @"ae": @"ඇ", @"aa": @"ආ", @"ii": @"ඊ",
+      @"uu": @"ඌ", @"ee": @"ඒ", @"ai": @"ඓ", @"oo": @"ඕ",
+      @"au": @"ඖ", @"A": @"ආ", @"I": @"ඊ", @"U": @"ඌ",
+      @"E": @"ඒ", @"O": @"ඕ", @"a": @"අ", @"i": @"ඉ",
+      @"u": @"උ", @"e": @"එ", @"o": @"ඔ"
+    };
+  });
+  return map;
+}
+
++ (NSDictionary<NSString *, NSString *> *)smartVowelSigns {
+  static NSDictionary *map;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    map = @{
+      @"aee": @"ෑ", @"ae": @"ැ", @"aa": @"ා", @"ii": @"ී",
+      @"uu": @"ූ", @"ee": @"ේ", @"ai": @"ෛ", @"oo": @"ෝ",
+      @"au": @"ෞ", @"A": @"ා", @"I": @"ී", @"U": @"ූ",
+      @"E": @"ේ", @"O": @"ෝ", @"a": @"", @"i": @"ි",
+      @"u": @"ු", @"e": @"ෙ", @"o": @"ො"
+    };
+  });
+  return map;
+}
+
++ (NSArray<NSString *> *)smartConsonantKeys {
+  return @[@"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
+           @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"k", @"g", @"c", @"j",
+           @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
+           @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
+}
+
++ (NSArray<NSString *> *)smartVowelKeys {
+  return @[@"aee", @"ae", @"aa", @"ii", @"uu", @"ee", @"ai", @"oo", @"au",
+           @"A", @"I", @"U", @"E", @"O", @"a", @"i", @"u", @"e", @"o"];
 }
 
 + (NSDictionary<NSString *, NSString *> *)vowels {
@@ -63,7 +125,7 @@ static NSString * const SLSTokenYansaya = @"\uE005";
   return @[@"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
            @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"k", @"g", @"c", @"j",
            @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
-           @"l", @"L", @"v", @"w", @"s", @"h", @"f"];
+           @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
 }
 
 + (NSArray<NSString *> *)vowelKeys {
@@ -121,12 +183,82 @@ static NSString * const SLSTokenYansaya = @"\uE005";
           i += vowelKey.length;
         }
       } else {
-        [out appendString:@"්"];
+        NSString *nextConsonant = [self matchFrom:input at:i keys:[self consonantKeys]];
+        BOOL isYansaya = [nextConsonant isEqualToString:@"y"];
+        BOOL isRakaaranshaya = [nextConsonant isEqualToString:@"r"] && 
+                               ![consonantKey isEqualToString:@"m"] && 
+                               ![consonantKey isEqualToString:@"n"] && 
+                               ![consonantKey isEqualToString:@"l"];
+        
+        if (isYansaya || isRakaaranshaya) {
+          [out appendFormat:@"%C%C", (unichar)0x0DCA, (unichar)0x200D];
+        } else {
+          [out appendString:@"්"];
+        }
       }
       continue;
     }
 
     NSString *vowelKey = [self matchFrom:input at:i keys:[self vowelKeys]];
+    if (vowelKey && vowels[vowelKey]) {
+      [out appendString:vowels[vowelKey]];
+      i += vowelKey.length;
+      continue;
+    }
+
+    [out appendString:ch];
+    i++;
+  }
+
+  return out;
+}
+
++ (NSString *)transliterateSmartPhonetic:(NSString *)input {
+  NSMutableString *out = [NSMutableString string];
+  NSUInteger i = 0;
+  NSDictionary *consonants = [self smartConsonants];
+  NSDictionary *vowels = [self smartVowels];
+  NSDictionary *vowelSigns = [self smartVowelSigns];
+
+  while (i < input.length) {
+    NSString *ch = [input substringWithRange:NSMakeRange(i, 1)];
+    if ([ch isEqualToString:@"M"]) {
+      [out appendString:@"ං"];
+      i++;
+      continue;
+    }
+    if ([ch isEqualToString:@"H"]) {
+      [out appendString:@"ඃ"];
+      i++;
+      continue;
+    }
+
+    NSString *consonantKey = [self matchFrom:input at:i keys:[self smartConsonantKeys]];
+    if (consonantKey && consonants[consonantKey]) {
+      [out appendString:consonants[consonantKey]];
+      i += consonantKey.length;
+      NSString *vowelKey = [self matchFrom:input at:i keys:[self smartVowelKeys]];
+      if (vowelKey && vowelSigns[vowelKey] != nil) {
+        [out appendString:vowelSigns[vowelKey]];
+        i += vowelKey.length;
+      } else {
+        NSString *nextConsonant = [self matchFrom:input at:i keys:[self smartConsonantKeys]];
+        BOOL isYansaya = [nextConsonant isEqualToString:@"y"];
+        BOOL isRakaaranshaya = [nextConsonant isEqualToString:@"r"] && 
+                               ![consonantKey isEqualToString:@"m"] && 
+                               ![consonantKey isEqualToString:@"n"] && 
+                               ![consonantKey isEqualToString:@"l"];
+        
+        if (isYansaya || isRakaaranshaya) {
+          [out appendFormat:@"%C%C", (unichar)0x0DCA, (unichar)0x200D];
+        } else {
+          [out appendString:@"්"];
+        }
+      }
+      continue;
+    }
+
+    NSString *vowelKey = [self matchFrom:input at:i keys:[self smartVowelKeys]];
     if (vowelKey && vowels[vowelKey]) {
       [out appendString:vowels[vowelKey]];
       i += vowelKey.length;

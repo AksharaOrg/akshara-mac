@@ -30,10 +30,11 @@ if registerStatus != noErr {
 }
 
 let phoneticID = "com.local.inputmethod.Akshara.Phonetic"
+let smartPhoneticID = "com.local.inputmethod.Akshara.SmartPhonetic"
 let wijesekaraID = "com.local.inputmethod.Akshara.SLS1134"
 let parentID = "com.local.inputmethod.Akshara"
 
-for inputSourceID in [parentID, phoneticID, wijesekaraID] {
+for inputSourceID in [parentID, phoneticID, smartPhoneticID, wijesekaraID] {
   guard let source = inputSource(withID: inputSourceID) else {
     fputs("Input source not found after registration: \(inputSourceID)\n", stderr)
     exit(1)

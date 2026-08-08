@@ -16,15 +16,26 @@
   return self;
 }
 
-- (BOOL)isPhoneticMode {
+typedef NS_ENUM(NSInteger, AksharaInputMode) {
+  AksharaInputModeWijesekara,
+  AksharaInputModePhonetic,
+  AksharaInputModeSmartPhonetic
+};
+
+- (AksharaInputMode)currentInputMode {
   TISInputSourceRef source = TISCopyCurrentKeyboardInputSource();
   if (!source) {
-    return YES;
+    return AksharaInputModePhonetic;
   }
   NSString *sourceID = (__bridge NSString *)TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
-  BOOL phonetic = !sourceID || [sourceID containsString:@"Phonetic"];
+  AksharaInputMode mode = AksharaInputModeWijesekara;
+  if ([sourceID containsString:@"SmartPhonetic"]) {
+    mode = AksharaInputModeSmartPhonetic;
+  } else if ([sourceID containsString:@"Phonetic"]) {
+    mode = AksharaInputModePhonetic;
+  }
   CFRelease(source);
-  return phonetic;
+  return mode;
 }
 
 - (void)insertString:(NSString *)string client:(id)sender {
@@ -85,7 +96,10 @@
 }
 
 - (NSString *)markedString {
-  if ([self isPhoneticMode]) {
+  AksharaInputMode mode = [self currentInputMode];
+  if (mode == AksharaInputModeSmartPhonetic) {
+    return [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
+  } else if (mode == AksharaInputModePhonetic) {
     return [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
   }
   return [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
@@ -111,8 +125,9 @@
 }
 
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
-  BOOL phoneticMode = [self isPhoneticMode];
-  NSUInteger blockedModifiers = phoneticMode
+  AksharaInputMode mode = [self currentInputMode];
+  BOOL isPhonetic = (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic);
+  NSUInteger blockedModifiers = isPhonetic
       ? (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption)
       : (NSEventModifierFlagCommand | NSEventModifierFlagControl);
   BOOL commandLike = (flags & blockedModifiers) != 0;
@@ -129,7 +144,7 @@
     return YES;
   }
 
-  if (!phoneticMode) {
+  if (!isPhonetic) {
     if (string.length == 0) {
       return NO;
     }
