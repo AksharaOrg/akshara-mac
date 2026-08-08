@@ -23,7 +23,7 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       @"n": @"න", @"p": @"ප", @"b": @"බ", @"m": @"ම",
       @"y": @"ය", @"r": @"ර", @"l": @"ල", @"L": @"ළ",
       @"v": @"ව", @"w": @"ව", @"s": @"ස", @"h": @"හ",
-      @"f": @"ෆ"
+      @"f": @"ෆ", @"R": @"ර", @"Y": @"ය"
     };
   });
   return map;
@@ -63,7 +63,7 @@ static NSString * const SLSTokenYansaya = @"\uE005";
   return @[@"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
            @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"k", @"g", @"c", @"j",
            @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
-           @"l", @"L", @"v", @"w", @"s", @"h", @"f"];
+           @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
 }
 
 + (NSArray<NSString *> *)vowelKeys {
@@ -110,7 +110,18 @@ static NSString * const SLSTokenYansaya = @"\uE005";
         [out appendString:vowelSigns[vowelKey]];
         i += vowelKey.length;
       } else {
-        [out appendString:@"්"];
+        NSString *nextConsonant = [self matchFrom:input at:i keys:[self consonantKeys]];
+        BOOL isYansaya = [nextConsonant isEqualToString:@"y"];
+        BOOL isRakaaranshaya = [nextConsonant isEqualToString:@"r"] && 
+                               ![consonantKey isEqualToString:@"m"] && 
+                               ![consonantKey isEqualToString:@"n"] && 
+                               ![consonantKey isEqualToString:@"l"];
+        
+        if (isYansaya || isRakaaranshaya) {
+          [out appendFormat:@"%C%C", (unichar)0x0DCA, (unichar)0x200D];
+        } else {
+          [out appendString:@"්"];
+        }
       }
       continue;
     }
