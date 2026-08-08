@@ -187,8 +187,19 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   if ([[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet punctuationCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet symbolCharacterSet] characterIsMember:first]) {
-    [self commitBufferWithSuffix:string client:sender];
-    return YES;
+    if (self.rawBuffer.length > 0) {
+      if (keyCode == 36 || keyCode == 76 || first == '\r' || first == '\n') {
+        // For Return/Enter key, commit the buffer without suffix so it just finalizes the word.
+        // Return NO to let the OS forward the Enter key to the app (e.g. to send the message).
+        [self commitBufferWithSuffix:@"" client:sender];
+        return NO;
+      } else {
+        [self commitBufferWithSuffix:string client:sender];
+        return YES;
+      }
+    } else {
+      return NO;
+    }
   }
 
   return NO;
