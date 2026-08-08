@@ -8,6 +8,9 @@ VERSION="${AKSHARA_VERSION:-0.1.0}"
 APP_SIGN_IDENTITY="${AKSHARA_APP_SIGN_IDENTITY:--}"
 PKG_SIGN_IDENTITY="${AKSHARA_PKG_SIGN_IDENTITY:-}"
 NOTARY_PROFILE="${AKSHARA_NOTARY_PROFILE:-}"
+NOTARY_KEY="${AKSHARA_NOTARY_KEY:-}"
+NOTARY_KEY_ID="${AKSHARA_NOTARY_KEY_ID:-}"
+NOTARY_ISSUER_ID="${AKSHARA_NOTARY_ISSUER_ID:-}"
 DIST_DIR="$ROOT/dist"
 APP="$DIST_DIR/$APP_NAME.app"
 PKG_ROOT="$ROOT/build/pkg-root"
@@ -36,7 +39,7 @@ fi
 /usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
 /usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
 /usr/bin/find "$PKG_ROOT" -name '._*' -delete
-/usr/bin/codesign --verify --verbose=4 "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
+/usr/bin/codesign --verify --deep --strict --verbose=4 "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
 
 cat >"$PKG_SCRIPTS/postinstall" <<'SCRIPT'
 #!/bin/sh
@@ -47,7 +50,6 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
 
 if [ -d "$APP" ]; then
   /usr/bin/xattr -cr "$APP" 2>/dev/null || true
-  /usr/bin/codesign --force --sign - "$APP" >/dev/null 2>&1 || true
   "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
 fi
 
@@ -130,11 +132,18 @@ if [[ -n "$PKG_SIGN_IDENTITY" ]]; then
 fi
 /usr/bin/productbuild "${PRODUCTBUILD_ARGS[@]}" "$FINAL_PKG"
 
-if [[ -n "$NOTARY_PROFILE" ]]; then
+if [[ -n "$NOTARY_KEY" || -n "$NOTARY_KEY_ID" || -n "$NOTARY_ISSUER_ID" ]]; then
+  if [[ -z "$NOTARY_KEY" || -z "$NOTARY_KEY_ID" || -z "$NOTARY_ISSUER_ID" ]]; then
+    echo "AKSHARA_NOTARY_KEY, AKSHARA_NOTARY_KEY_ID, and AKSHARA_NOTARY_ISSUER_ID must be set together" >&2
+    exit 2
+  fi
+  /usr/bin/xcrun notarytool submit "$FINAL_PKG" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
+  /usr/bin/xcrun stapler staple "$FINAL_PKG"
+elif [[ -n "$NOTARY_PROFILE" ]]; then
   /usr/bin/xcrun notarytool submit "$FINAL_PKG" --keychain-profile "$NOTARY_PROFILE" --wait
   /usr/bin/xcrun stapler staple "$FINAL_PKG"
 fi
 
-/usr/sbin/pkgutil --check-signature "$FINAL_PKG" >/dev/null 2>&1 || true
+/usr/sbin/pkgutil --check-signature "$FINAL_PKG"
 echo "Built installer: $FINAL_PKG"
 echo "Install with: open \"$FINAL_PKG\""

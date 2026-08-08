@@ -63,6 +63,26 @@ AKSHARA_NOTARY_PROFILE="notarytool-profile-name" \
 
 Omit `AKSHARA_NOTARY_PROFILE` to build a signed package without notarizing.
 
+## GitHub releases
+
+Pushing a tag such as `v0.1.0` runs the signed-release workflow. It uses the
+protected `release` environment and requires these GitHub Actions
+secrets:
+
+- `MACOS_APP_SIGNING_CERTIFICATE_BASE64`: a password-protected `.p12` export
+  of the Developer ID Application certificate and private key, Base64 encoded.
+- `MACOS_INSTALLER_SIGNING_CERTIFICATE_BASE64`: the equivalent Developer ID
+  Installer `.p12` export.
+- `MACOS_CERTIFICATE_PASSWORD`: the password used for both `.p12` exports.
+- `APPLE_NOTARY_API_KEY_BASE64`: a Base64-encoded App Store Connect API-key
+  `.p8` file with access to notarization.
+- `APPLE_NOTARY_KEY_ID` and `APPLE_NOTARY_ISSUER_ID`: the matching API-key
+  identifiers.
+
+The workflow signs the app and installer, notarizes and staples the package,
+then publishes it as a GitHub Release asset. Keep the GitHub environment
+restricted to trusted release approvers; never commit any of these values.
+
 ## License
 
 Akshara is released under the [MIT License](https://opensource.org/license/mit).
