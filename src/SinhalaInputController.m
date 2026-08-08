@@ -113,15 +113,22 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
   NSMutableString *text = [NSMutableString string];
   if (self.rawBuffer.length > 0) {
-    NSString *composed = [self isPhoneticMode]
-        ? [SinhalaTransliterator transliteratePhonetic:self.rawBuffer]
-        : [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
+    AksharaInputMode mode = [self currentInputMode];
+    NSString *composed;
+    if (mode == AksharaInputModeSmartPhonetic) {
+      composed = [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
+    } else if (mode == AksharaInputModePhonetic) {
+      composed = [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
+    } else {
+      composed = [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
+    }
     [text appendString:composed];
   }
   if (suffix.length > 0) {
     [text appendString:suffix];
   }
   [self.rawBuffer setString:@""];
+  [self updateComposition];
   if (text.length > 0) {
     [self insertString:text client:sender];
   }
