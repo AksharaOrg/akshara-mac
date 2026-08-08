@@ -4,6 +4,7 @@
 
 @interface SinhalaInputController ()
 @property(nonatomic, strong) NSMutableString *rawBuffer;
+@property(nonatomic, strong) NSDate *lastSpaceTime;
 @end
 
 @implementation SinhalaInputController
@@ -135,6 +136,28 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
+  if (keyCode == 49 || [string isEqualToString:@" "]) {
+    NSDate *now = [NSDate date];
+    if (self.lastSpaceTime && [now timeIntervalSinceDate:self.lastSpaceTime] < 0.5) {
+      self.lastSpaceTime = nil;
+      NSRange range = [sender selectedRange];
+      if (range.location != NSNotFound && range.location >= 2) {
+        NSAttributedString *prev = [sender attributedSubstringFromRange:NSMakeRange(range.location - 1, 1)];
+        NSAttributedString *prevPrev = [sender attributedSubstringFromRange:NSMakeRange(range.location - 2, 1)];
+        if ([prev.string isEqualToString:@" "] && prevPrev.string.length > 0) {
+          unichar ppChar = [prevPrev.string characterAtIndex:0];
+          if (![[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:ppChar]) {
+            [sender insertText:@". " replacementRange:NSMakeRange(range.location - 1, 1)];
+            return YES;
+          }
+        }
+      }
+    }
+    self.lastSpaceTime = now;
+  } else if (string.length > 0 && keyCode != 51) {
+    self.lastSpaceTime = nil;
+  }
+
   AksharaInputMode mode = [self currentInputMode];
   BOOL isPhonetic = (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic);
   NSUInteger blockedModifiers = isPhonetic
@@ -168,9 +191,11 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
         [self updateComposition];
       }
     } else {
-      [self commitBufferWithSuffix:mapped client:sender];
+      if (self.rawBuffer.length > 0) {
+        [self commitBufferWithSuffix:@"" client:sender];
+      }
+      return NO;
     }
-    return YES;
   }
 
   if (string.length == 0) {
@@ -188,18 +213,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       [[NSCharacterSet punctuationCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet symbolCharacterSet] characterIsMember:first]) {
     if (self.rawBuffer.length > 0) {
-      if (keyCode == 36 || keyCode == 76 || first == '\r' || first == '\n') {
-        // For Return/Enter key, commit the buffer without suffix so it just finalizes the word.
-        // Return NO to let the OS forward the Enter key to the app (e.g. to send the message).
-        [self commitBufferWithSuffix:@"" client:sender];
-        return NO;
-      } else {
-        [self commitBufferWithSuffix:string client:sender];
-        return YES;
-      }
-    } else {
-      return NO;
+      [self commitBufferWithSuffix:@"" client:sender];
     }
+    return NO;
   }
 
   return NO;

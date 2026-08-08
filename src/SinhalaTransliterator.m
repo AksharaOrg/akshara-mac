@@ -228,6 +228,18 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       i++;
       continue;
     }
+    if ([self matchFrom:input at:i keys:@[@"zn"]]) {
+      [out appendString:@"ං"];
+      i += 2;
+      continue;
+    }
+    if ([ch isEqualToString:@"z"]) {
+      NSString *sanyakaKey = [self matchFrom:input at:i keys:@[@"zg", @"zj", @"zd", @"zdh", @"zq", @"zk", @"zh"]];
+      if (!sanyakaKey) {
+        i++;
+        continue;
+      }
+    }
     if ([ch isEqualToString:@"H"]) {
       [out appendString:@"ඃ"];
       i++;

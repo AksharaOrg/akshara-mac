@@ -1,8 +1,9 @@
 # Akshara for macOS
 
-A clean-room Sinhala input method for modern macOS. It provides two input modes:
+A clean-room Sinhala input method for modern macOS. It provides three input modes:
 
 - `Akshara - Phonetic`: romanized Sinhala composition.
+- `Akshara - Smart Phonetic`: advanced phonetic typing with simplified combinations (e.g., 'Aa' for 'ඈ', 'x' for 'ං').
 - `Akshara - SLS1134`: direct Wijesekara/SLS-style key entry.
 
 ## Requirements
@@ -97,6 +98,39 @@ See [LICENSE](LICENSE).
 - `aa`, `ae`, `ii`, `uu`, `ee`, `ai`, `oo`, `au` produce long or compound vowels.
 
 Use `M` for anusvara (`ං`) and `H` for visarga (`ඃ`).
+
+## Smart Phonetic Typing Rules
+
+Smart Phonetic introduces an intuitive set of rules to type Sinhala quickly using English letters:
+
+### Vowels
+- **අ** (`a`), **ආ** (`aa`), **ඇ** (`A`), **ඈ** (`Aa` or `AA`)
+- **ඉ** (`i`), **ඊ** (`ii`), **උ** (`u`), **ඌ** (`uu`)
+- **ඍ** (`R`), **ඎ** (`Ru`)
+- **එ** (`e`), **ඒ** (`ee`), **ඓ** (`ai`)
+- **ඔ** (`o`), **ඕ** (`oo`), **ඖ** (`au` or `ou`)
+
+### Consonants
+- **ක** (`ka`), **ග** (`ga`), **ච** (`cha`), **ජ** (`ja`)
+- **ට** (`ta`), **ඩ** (`da`), **ත** (`tha`), **ද** (`dha` or `q`)
+- **න** (`na`), **ණ** (`N`), **ප** (`pa`), **බ** (`ba`), **ම** (`ma`)
+- **ය** (`ya`), **ර** (`ra`), **ල** (`la`), **ළ** (`L`), **ව** (`w` or `v`)
+- **ස** (`sa`), **ශ** (`sha`), **ෂ** (`Sa` or `Sha`)
+- **හ** (`ha`), **ෆ** (`fa`), **ඞ** (`X`)
+
+### Mahaprana (Aspirated) Consonants
+- **ඛ** (`kha`), **ඝ** (`gha`), **ඡ** (`chha`)
+- **ඨ** (`Ta`), **ඪ** (`Da`), **ථ** (`thha`), **ධ** (`dhha`)
+- **ඵ** (`pha`), **භ** (`bha`)
+
+### Sanyaka Consonants
+- **ඟ** (`zga`), **ඦ** (`zja`), **ඬ** (`zda`)
+- **ඳ** (`zdha` or `zqa`), **ඤ** (`zka`), **ඥ** (`zha`), **ඹ** (`Ba`)
+
+### Special Symbols
+- **Anusvara (ං)**: `x`, or `M`
+- **Visarga (ඃ)**: `H`
+- **Double Space**: Pressing space twice will natively insert a full stop (period) across all modes.
 
 ## Wijesekara/SLS Ordering
 
