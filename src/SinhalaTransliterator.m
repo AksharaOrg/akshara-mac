@@ -1,3 +1,4 @@
+#import "SmartPhoneticMaps.h"
 #import "SinhalaTransliterator.h"
 
 static NSString * const SLSTokenJoin = @"\uE000";
@@ -216,13 +217,13 @@ static NSString * const SLSTokenYansaya = @"\uE005";
 + (NSString *)transliterateSmartPhonetic:(NSString *)input {
   NSMutableString *out = [NSMutableString string];
   NSUInteger i = 0;
-  NSDictionary *consonants = [self smartConsonants];
-  NSDictionary *vowels = [self smartVowels];
-  NSDictionary *vowelSigns = [self smartVowelSigns];
+  NSDictionary *consonants = [SmartPhoneticMaps smartConsonants];
+  NSDictionary *vowels = [SmartPhoneticMaps smartVowels];
+  NSDictionary *vowelSigns = [SmartPhoneticMaps smartVowelSigns];
 
   while (i < input.length) {
     NSString *ch = [input substringWithRange:NSMakeRange(i, 1)];
-    if ([ch isEqualToString:@"M"]) {
+    if ([ch isEqualToString:@"M"] || [ch isEqualToString:@"x"]) {
       [out appendString:@"ං"];
       i++;
       continue;
@@ -233,16 +234,16 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       continue;
     }
 
-    NSString *consonantKey = [self matchFrom:input at:i keys:[self smartConsonantKeys]];
+    NSString *consonantKey = [self matchFrom:input at:i keys:[SmartPhoneticMaps smartConsonantKeys]];
     if (consonantKey && consonants[consonantKey]) {
       [out appendString:consonants[consonantKey]];
       i += consonantKey.length;
-      NSString *vowelKey = [self matchFrom:input at:i keys:[self smartVowelKeys]];
+      NSString *vowelKey = [self matchFrom:input at:i keys:[SmartPhoneticMaps smartVowelKeys]];
       if (vowelKey && vowelSigns[vowelKey] != nil) {
         [out appendString:vowelSigns[vowelKey]];
         i += vowelKey.length;
       } else {
-        NSString *nextConsonant = [self matchFrom:input at:i keys:[self smartConsonantKeys]];
+        NSString *nextConsonant = [self matchFrom:input at:i keys:[SmartPhoneticMaps smartConsonantKeys]];
         BOOL isYansaya = [nextConsonant isEqualToString:@"y"];
         BOOL isRakaaranshaya = [nextConsonant isEqualToString:@"r"] && 
                                ![consonantKey isEqualToString:@"m"] && 
@@ -258,7 +259,7 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       continue;
     }
 
-    NSString *vowelKey = [self matchFrom:input at:i keys:[self smartVowelKeys]];
+    NSString *vowelKey = [self matchFrom:input at:i keys:[SmartPhoneticMaps smartVowelKeys]];
     if (vowelKey && vowels[vowelKey]) {
       [out appendString:vowels[vowelKey]];
       i += vowelKey.length;

@@ -128,6 +128,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [text appendString:suffix];
   }
   [self.rawBuffer setString:@""];
+  [self updateComposition];
   if (text.length > 0) {
     [self insertString:text client:sender];
   }
