@@ -124,7 +124,7 @@ Smart Phonetic introduces an intuitive set of rules to type Sinhala quickly usin
 - **ඵ** (`pha`), **භ** (`bha`)
 
 ### Sanyaka Consonants
-- **ඟ** (`zga`), **ඦ** (`zja`), **ඬ** (`zd`a)
+- **ඟ** (`zga`), **ඦ** (`zja`), **ඬ** (`zda`)
 - **ඳ** (`zdha` or `zqa`), **ඤ** (`zka`), **ඥ** (`zha`), **ඹ** (`Ba`)
 
 ### Special Symbols
