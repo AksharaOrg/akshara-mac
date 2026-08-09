@@ -11,8 +11,8 @@ clang \
   -I "$ROOT/src" \
   -o "$ROOT/build/TestTransliterator" \
   "$ROOT/tests/TestTransliterator.m" \
-  "$ROOT/src/SinhalaTransliterator.m"
+  "$ROOT/src/SinhalaTransliterator.m" \
+  "$ROOT/src/SmartPhoneticMaps.m"
 
 "$ROOT/build/TestTransliterator"
 echo "Transliterator tests passed"
-
