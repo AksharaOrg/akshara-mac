@@ -168,6 +168,7 @@ int main(void) {
     ok = expectSLSProgression(@"ෙවනව", (@[@"", @"වෙ", @"වෙන", @"වෙනව"])) && ok;
     ok = expectSLSOrder(@"ෙවනව", @"වෙනව") && ok;
     ok = expectPhoneticProgression(@"amma", (@[@"අ", @"අම්", @"අම්ම්", @"අම්ම"])) && ok;
+    ok = expectPhoneticProgression(@"siMhala", (@[@"ස්", @"සි", @"සිං", @"සිංහ්", @"සිංහ", @"සිංහල්", @"සිංහල"])) && ok;
     ok = expectSLSOrder(@"ගෘෘ", @"ගෲ") && ok;
     ok = expectSLSOrder(@"ගං", @"ගං") && ok;
     ok = expectSLSOrder(@"ගඃ", @"ගඃ") && ok;
