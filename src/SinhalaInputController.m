@@ -210,6 +210,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       if ([self markedString].length > 0) {
         [self updateComposition];
       }
+      return YES;
     } else {
       if (self.rawBuffer.length > 0) {
         [self commitBufferWithSuffix:@"" client:sender];
