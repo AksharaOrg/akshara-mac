@@ -135,6 +135,26 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   }
 }
 
+- (BOOL)commitBufferAndForwardCommand:(SEL)command client:(id)sender {
+  BOOL hadComposition = self.rawBuffer.length > 0;
+  if (!hadComposition) {
+    return NO;
+  }
+
+  [self commitBufferWithSuffix:@"" client:sender];
+
+  // A client that uses key bindings (including Electron-based messengers) may
+  // consume Return while an IME composition is active. Forward the command
+  // after committing so the client receives the same action it would receive
+  // with a non-IME keyboard layout.
+  if ([sender respondsToSelector:@selector(doCommandBySelector:)]) {
+    [sender doCommandBySelector:command];
+    return YES;
+  }
+
+  return NO;
+}
+
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
   if (keyCode == 49 || [string isEqualToString:@" "]) {
     NSDate *now = [NSDate date];
@@ -190,6 +210,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       if ([self markedString].length > 0) {
         [self updateComposition];
       }
+      return YES;
     } else {
       if (self.rawBuffer.length > 0) {
         [self commitBufferWithSuffix:@"" client:sender];
@@ -212,6 +233,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   if ([[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet punctuationCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet symbolCharacterSet] characterIsMember:first]) {
+    if (first == '\r' || first == '\n') {
+      return [self commitBufferAndForwardCommand:@selector(insertNewline:) client:sender];
+    }
     if (self.rawBuffer.length > 0) {
       [self commitBufferWithSuffix:@"" client:sender];
     }
@@ -229,7 +253,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   if (aSelector == @selector(deleteBackward:)) {
     return [self inputText:@"" key:kVK_Delete modifiers:0 client:sender];
   }
-  if (aSelector == @selector(insertNewline:) || aSelector == @selector(insertTab:)) {
+  if (aSelector == @selector(insertNewline:)) {
+    return [self commitBufferAndForwardCommand:aSelector client:sender];
+  }
+  if (aSelector == @selector(insertTab:)) {
     [self commitComposition:sender];
     return NO;
   }
