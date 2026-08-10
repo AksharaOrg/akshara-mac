@@ -149,3 +149,6 @@ stores them in Unicode order. For example:
 The SLS mode also supports the public Wijesekara/SLS control symbols for
 yansaya, rakaransaya, repaya, join/touching letters, sanyakaya forms, visargaya,
 kunddaliya, non-breaking/invisible spaces, and common AltGr entries.
+
+In Wijesekara mode, the full stop (`.`) is on the apostrophe/quote key (`'`);
+the physical period key produces `ග` (and Option-Period produces `ඟ`).

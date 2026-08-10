@@ -184,6 +184,9 @@ int main(void) {
     ok = expectSLSOrder(@"ෙ", @"‌ෙ") && ok;
     ok = expectSLSKey(@"o", NO, YES, @"ඳ") && ok;
     ok = expectSLSKey(@".", NO, YES, @"ඟ") && ok;
+    ok = expectSLSKey(@"'", NO, NO, @".") && ok;
+    ok = expectSLSKey(@"]", NO, NO, @";") && ok;
+    ok = expectSLSKey(@"z", NO, NO, @"'") && ok;
     ok = expectSLSKey(@"v", NO, YES, @"ඬ") && ok;
     ok = expectSLSKey(@"c", NO, YES, @"ඦ") && ok;
     ok = expectSLSKey(@"x", NO, YES, @"ඃ") && ok;
