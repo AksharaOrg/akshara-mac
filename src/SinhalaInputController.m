@@ -211,6 +211,12 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
         [self updateComposition];
       }
       return YES;
+    } else if (![mapped isEqualToString:lookup]) {
+      // Some Wijesekara keys produce ASCII punctuation.  They still belong to
+      // the layout, so commit any pending Sinhala composition and insert the
+      // mapped character instead of forwarding the physical key's character.
+      [self commitBufferWithSuffix:mapped client:sender];
+      return YES;
     } else {
       if (self.rawBuffer.length > 0) {
         [self commitBufferWithSuffix:@"" client:sender];
