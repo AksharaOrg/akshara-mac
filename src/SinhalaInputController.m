@@ -1,5 +1,6 @@
 #import "SinhalaInputController.h"
 #import "SinhalaTransliterator.h"
+#import "AutoUpdater.h"
 #import <Carbon/Carbon.h>
 
 @interface SinhalaInputController ()
@@ -13,6 +14,7 @@
   self = [super initWithServer:server delegate:delegate client:inputClient];
   if (self) {
     _rawBuffer = [NSMutableString string];
+    [[AutoUpdater sharedUpdater] startCheckingForUpdates];
   }
   return self;
 }
@@ -290,6 +292,20 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 - (void)deactivateServer:(id)sender {
   [self commitComposition:sender];
   [super deactivateServer:sender];
+}
+
+- (NSMenu *)menu {
+  NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Akshara Menu"];
+  NSMenuItem *updateItem = [[NSMenuItem alloc] initWithTitle:@"Check for Updates..."
+                                                      action:@selector(checkForUpdatesManually:)
+                                               keyEquivalent:@""];
+  updateItem.target = self;
+  [menu addItem:updateItem];
+  return menu;
+}
+
+- (void)checkForUpdatesManually:(id)sender {
+  [[AutoUpdater sharedUpdater] checkForUpdatesNow];
 }
 
 @end
