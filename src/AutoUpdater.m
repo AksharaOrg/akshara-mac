@@ -2,6 +2,11 @@
 #import <UserNotifications/UserNotifications.h>
 #import <AppKit/AppKit.h>
 
+static NSString * const AksharaUpdateDownloadURLKey = @"AksharaUpdateDownloadURL";
+static NSString * const AksharaUpdateVersionKey = @"AksharaUpdateVersion";
+static NSString * const AksharaLastNotifiedVersionKey = @"AksharaLastNotifiedVersion";
+static NSString * const AksharaUpdatePackageSigner = @"Developer ID Installer: Lahiru Himesh Madusanka Siddha Dewayala Gedara (8292UX7379)";
+
 @interface AutoUpdater () <UNUserNotificationCenterDelegate>
 @property (nonatomic, strong) NSString *downloadUrl;
 @property (nonatomic, strong) NSURLSessionDownloadTask *downloadTask;
@@ -36,12 +41,14 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         [self checkForUpdatesNow];
-        
-        [NSTimer scheduledTimerWithTimeInterval:3600
-                                         target:self
-                                       selector:@selector(checkForUpdatesNow)
-                                       userInfo:nil
-                                        repeats:YES];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [NSTimer scheduledTimerWithTimeInterval:3600
+                                             target:self
+                                           selector:@selector(checkForUpdatesNow)
+                                           userInfo:nil
+                                            repeats:YES];
+        });
     });
 }
 
@@ -70,9 +77,10 @@
         if ([tagName compare:currentVersion options:NSNumericSearch] == NSOrderedDescending) {
             NSArray *assets = json[@"assets"];
             NSString *pkgUrl = nil;
+            NSString *expectedPackageName = [NSString stringWithFormat:@"Akshara-v%@.pkg", tagName];
             for (NSDictionary *asset in assets) {
                 NSString *name = asset[@"name"];
-                if ([name hasSuffix:@".pkg"]) {
+                if ([name isEqualToString:expectedPackageName]) {
                     pkgUrl = asset[@"browser_download_url"];
                     break;
                 }
@@ -80,7 +88,14 @@
             
             if (pkgUrl) {
                 self.downloadUrl = pkgUrl;
-                [self showUpdateNotificationForVersion:tagName];
+                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+                [defaults setObject:pkgUrl forKey:AksharaUpdateDownloadURLKey];
+                [defaults setObject:tagName forKey:AksharaUpdateVersionKey];
+
+                if (![[defaults stringForKey:AksharaLastNotifiedVersionKey] isEqualToString:tagName]) {
+                    [self showUpdateNotificationForVersion:tagName];
+                    [defaults setObject:tagName forKey:AksharaLastNotifiedVersionKey];
+                }
             }
         }
     }];
@@ -111,27 +126,57 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 }
 
 - (void)downloadAndInstallUpdate {
-    if (!self.downloadUrl) return;
+    NSString *downloadURLString = self.downloadUrl ?: [[NSUserDefaults standardUserDefaults] stringForKey:AksharaUpdateDownloadURLKey];
+    if (!downloadURLString) return;
     
-    NSURL *url = [NSURL URLWithString:self.downloadUrl];
-    NSURLSessionDownloadTask *downloadTask = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+    NSURL *url = [NSURL URLWithString:downloadURLString];
+    if (![url.scheme isEqualToString:@"https"] || !url.host.length) return;
+
+    self.downloadTask = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
         (void)response;
         if (error || !location) return;
         
         NSString *tempDir = NSTemporaryDirectory();
-        NSString *destPath = [tempDir stringByAppendingPathComponent:@"Akshara-Update.pkg"];
+        NSString *fileName = [NSString stringWithFormat:@"Akshara-Update-%@.pkg", [NSUUID UUID].UUIDString];
+        NSString *destPath = [tempDir stringByAppendingPathComponent:fileName];
         NSURL *destURL = [NSURL fileURLWithPath:destPath];
         
         NSFileManager *fm = [NSFileManager defaultManager];
-        [fm removeItemAtURL:destURL error:nil];
         
         if ([fm moveItemAtURL:location toURL:destURL error:nil]) {
+            if (![self isTrustedUpdatePackageAtURL:destURL]) {
+                [fm removeItemAtURL:destURL error:nil];
+                return;
+            }
             dispatch_async(dispatch_get_main_queue(), ^{
                 [[NSWorkspace sharedWorkspace] openURL:destURL];
             });
         }
     }];
-    [downloadTask resume];
+    [self.downloadTask resume];
+}
+
+- (BOOL)isTrustedUpdatePackageAtURL:(NSURL *)packageURL {
+    NSTask *task = [[NSTask alloc] init];
+    task.launchPath = @"/usr/sbin/pkgutil";
+    task.arguments = @[@"--check-signature", packageURL.path];
+
+    NSPipe *output = [NSPipe pipe];
+    task.standardOutput = output;
+    task.standardError = output;
+
+    @try {
+        [task launch];
+        [task waitUntilExit];
+    } @catch (NSException *exception) {
+        return NO;
+    }
+
+    NSData *data = [[output fileHandleForReading] readDataToEndOfFile];
+    NSString *result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    return task.terminationStatus == 0 &&
+           [result containsString:AksharaUpdatePackageSigner] &&
+           [result containsString:@"Notarization: trusted by the Apple notary service"];
 }
 
 @end
