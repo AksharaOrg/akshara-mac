@@ -22,11 +22,13 @@ clang \
   -framework Cocoa \
   -framework Carbon \
   -framework InputMethodKit \
+  -framework UserNotifications \
   -o "$BUILD_DIR/$APP_NAME" \
   "$ROOT/src/main.m" \
   "$ROOT/src/SinhalaInputController.m" \
   "$ROOT/src/SinhalaTransliterator.m" \
-  "$ROOT/src/SmartPhoneticMaps.m"
+  "$ROOT/src/SmartPhoneticMaps.m" \
+  "$ROOT/src/AutoUpdater.m"
 
 cp "$BUILD_DIR/$APP_NAME" "$MACOS/$APP_NAME"
 cp "$ROOT/support/Info.plist" "$CONTENTS/Info.plist"
