@@ -5,5 +5,6 @@
 + (instancetype)sharedUpdater;
 - (void)startCheckingForUpdates;
 - (void)checkForUpdatesNow;
+- (void)checkForUpdatesManually;
 
 @end
