@@ -127,9 +127,21 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
+  NSString *commitStr = [self markedString];
   [self.rawBuffer setString:@""];
   self.lastCommittedString = @"";
-  [self updateCustomComposition];
+  
+  NSString *bundleId = nil;
+  if ([sender respondsToSelector:@selector(bundleIdentifier)]) {
+      bundleId = [sender bundleIdentifier];
+  }
+  if ([bundleId.lowercaseString containsString:@"adobe"]) {
+      if (commitStr.length > 0) {
+          [sender insertText:commitStr replacementRange:NSMakeRange(NSNotFound, 0)];
+      }
+  } else {
+      [self updateCustomComposition];
+  }
   if (suffix.length > 0) {
     [self insertString:suffix client:sender];
   }
@@ -442,6 +454,20 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   
   NSString *oldString = self.lastCommittedString ?: @"";
   NSString *newString = [self markedString];
+  
+  NSString *bundleId = nil;
+  if ([client respondsToSelector:@selector(bundleIdentifier)]) {
+      bundleId = [client bundleIdentifier];
+  }
+  if ([bundleId.lowercaseString containsString:@"adobe"]) {
+      if (![oldString isEqualToString:newString]) {
+          NSDictionary *attr = @{ NSUnderlineStyleAttributeName: @(NSUnderlineStyleNone) };
+          NSAttributedString *attrStr = [[NSAttributedString alloc] initWithString:newString attributes:attr];
+          [client setMarkedText:attrStr selectionRange:NSMakeRange(newString.length, 0) replacementRange:NSMakeRange(NSNotFound, 0)];
+          self.lastCommittedString = newString;
+      }
+      return;
+  }
   
   if ([oldString isEqualToString:newString]) {
     return;
