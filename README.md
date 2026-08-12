@@ -117,12 +117,11 @@ Smart Phonetic introduces an intuitive set of rules to type Sinhala quickly usin
 - **ය** (`ya`), **ර** (`ra`), **ල** (`la`), **ළ** (`L`), **ව** (`w`, `v`, `Wa` or `Va`)
 - **ස** (`sa`), **ශ** (`sha`), **ෂ** (`Sa` or `Sha`)
 - **හ** (`ha`), **ෆ** (`fa`), **ඞ** (`X`)
-- **ඣ** (`Ja`)
 
 ### Mahaprana (Aspirated) Consonants
 - **ඛ** (`kha`, `Ka` or `Ca`), **ඝ** (`gha` or `Ga`), **ඡ** (`chha`)
 - **ඨ** (`Ta`), **ඪ** (`Da`), **ථ** (`thha`), **ධ** (`dhha`)
-- **ඵ** (`pha` or `Pa`), **භ** (`bha`)
+- **ඵ** (`pha` or `Pa`), **භ** (`bha`), **ඣ** (`Ja`)
 
 ### Sanyaka Consonants
 - **ඟ** (`zga`), **ඦ** (`zja`), **ඬ** (`zda`)
