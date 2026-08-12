@@ -305,7 +305,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (void)checkForUpdatesManually:(id)sender {
-  [[AutoUpdater sharedUpdater] checkForUpdatesNow];
+  [[AutoUpdater sharedUpdater] checkForUpdatesManually];
 }
 
 @end
