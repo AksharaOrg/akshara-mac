@@ -6,6 +6,11 @@
 @interface SinhalaInputController ()
 @property(nonatomic, strong) NSMutableString *rawBuffer;
 @property(nonatomic, strong) NSDate *lastSpaceTime;
+@property(nonatomic, strong) NSString *lastCommittedString;
+@property(nonatomic, assign) NSUInteger expectedCursorLocation;
+@property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
+@property(nonatomic, assign) NSRange lastReportedRange;
+- (void)updateCustomComposition;
 @end
 
 @implementation SinhalaInputController
@@ -14,6 +19,10 @@
   self = [super initWithServer:server delegate:delegate client:inputClient];
   if (self) {
     _rawBuffer = [NSMutableString string];
+    _lastCommittedString = @"";
+    _expectedCursorLocation = NSNotFound;
+    _expectedCursorLocationGraphemes = NSNotFound;
+    _lastReportedRange = NSMakeRange(NSNotFound, 0);
     [[AutoUpdater sharedUpdater] startCheckingForUpdates];
   }
   return self;
@@ -110,31 +119,23 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)clearComposition {
   [self.rawBuffer setString:@""];
-  [self updateComposition];
+  self.lastCommittedString = @"";
+  self.expectedCursorLocation = NSNotFound;
+  self.expectedCursorLocationGraphemes = NSNotFound;
+  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
+  [self updateCustomComposition];
 }
 
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
-  NSMutableString *text = [NSMutableString string];
-  if (self.rawBuffer.length > 0) {
-    AksharaInputMode mode = [self currentInputMode];
-    NSString *composed;
-    if (mode == AksharaInputModeSmartPhonetic) {
-      composed = [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
-    } else if (mode == AksharaInputModePhonetic) {
-      composed = [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
-    } else {
-      composed = [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
-    }
-    [text appendString:composed];
-  }
-  if (suffix.length > 0) {
-    [text appendString:suffix];
-  }
   [self.rawBuffer setString:@""];
-  [self updateComposition];
-  if (text.length > 0) {
-    [self insertString:text client:sender];
+  self.lastCommittedString = @"";
+  [self updateCustomComposition];
+  if (suffix.length > 0) {
+    [self insertString:suffix client:sender];
   }
+  self.expectedCursorLocation = NSNotFound;
+  self.expectedCursorLocationGraphemes = NSNotFound;
+  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
 }
 
 - (BOOL)commitBufferAndForwardCommand:(SEL)command client:(id)sender {
@@ -157,7 +158,64 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return NO;
 }
 
+- (BOOL)shouldCommitBufferBeforeInput:(NSString *)newInput {
+  if (self.rawBuffer.length == 0) {
+    return NO;
+  }
+  
+  NSString *vowelsStr = @"aeiouAEIOU";
+  unichar lastChar = [self.rawBuffer characterAtIndex:self.rawBuffer.length - 1];
+  BOOL lastWasVowel = [vowelsStr rangeOfString:[NSString stringWithCharacters:&lastChar length:1]].location != NSNotFound;
+  
+  if (lastWasVowel) {
+    unichar newChar = (newInput.length > 0) ? [newInput characterAtIndex:0] : 0;
+    BOOL newIsVowel = (newInput.length > 0) && ([vowelsStr rangeOfString:[NSString stringWithCharacters:&newChar length:1]].location != NSNotFound);
+    
+    if (newIsVowel) {
+      NSMutableString *temp = [self.rawBuffer mutableCopy];
+      [temp appendString:newInput];
+      AksharaInputMode mode = [self currentInputMode];
+      NSString *transCommitted = [self markedString];
+      NSString *transCombined = (mode == AksharaInputModeSmartPhonetic)
+          ? [SinhalaTransliterator transliterateSmartPhonetic:temp]
+          : [SinhalaTransliterator transliteratePhonetic:temp];
+      if (![transCombined isEqualToString:transCommitted]) {
+        return NO;
+      }
+    }
+    
+    return YES;
+  }
+  
+  return NO;
+}
+
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
+  if ((keyCode >= 123 && keyCode <= 126) || keyCode == 115 || keyCode == 119 || keyCode == 116 || keyCode == 121) {
+    if (self.rawBuffer.length > 0) {
+      [self commitComposition:sender];
+    }
+    return NO;
+  }
+
+  if ([sender respondsToSelector:@selector(selectedRange)]) {
+    NSRange sel = [sender selectedRange];
+    if (sel.location != NSNotFound) {
+      BOOL cursorMoved = (self.expectedCursorLocation != NSNotFound && 
+                          sel.location != self.expectedCursorLocation && 
+                          sel.location != self.expectedCursorLocationGraphemes);
+                          
+      if (cursorMoved && self.lastReportedRange.location != NSNotFound && sel.location == self.lastReportedRange.location) {
+        cursorMoved = NO;
+      }
+      
+      if (sel.length > 0 || cursorMoved) {
+        [self commitComposition:sender];
+      }
+    }
+    self.lastReportedRange = sel;
+  }
+
   if (keyCode == 49 || [string isEqualToString:@" "]) {
     NSDate *now = [NSDate date];
     if (self.lastSpaceTime && [now timeIntervalSinceDate:self.lastSpaceTime] < 0.5) {
@@ -194,8 +252,29 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     if (self.rawBuffer.length == 0) {
       return NO;
     }
-    [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
-    [self updateComposition];
+    
+    NSString *currentComposed = self.lastCommittedString ?: @"";
+    NSUInteger targetGraphemes = [self graphemeCountForString:currentComposed];
+    if (targetGraphemes > 0) {
+      targetGraphemes -= 1;
+    }
+    
+    while (self.rawBuffer.length > 0) {
+      [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
+      NSString *newComposed = [self markedString];
+      if ([self graphemeCountForString:newComposed] <= targetGraphemes) {
+        break;
+      }
+    }
+    
+    BOOL shouldReturnNo = (self.rawBuffer.length == 0);
+    [self updateCustomComposition];
+    
+    if (shouldReturnNo) {
+        self.expectedCursorLocation = NSNotFound;
+        self.expectedCursorLocationGraphemes = NSNotFound;
+        return NO;
+    }
     return YES;
   }
 
@@ -209,14 +288,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     NSString *mapped = [SinhalaTransliterator slsCharacterForInput:lookup shifted:shifted altGr:altGr];
     if ([SinhalaTransliterator isSinhalaInputUnit:mapped]) {
       [self.rawBuffer appendString:mapped];
-      if ([self markedString].length > 0) {
-        [self updateComposition];
-      }
+      [self updateCustomComposition];
       return YES;
     } else if (![mapped isEqualToString:lookup]) {
-      // Some Wijesekara keys produce ASCII punctuation.  They still belong to
-      // the layout, so commit any pending Sinhala composition and insert the
-      // mapped character instead of forwarding the physical key's character.
       [self commitBufferWithSuffix:mapped client:sender];
       return YES;
     } else {
@@ -233,8 +307,11 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
   unichar first = [string characterAtIndex:0];
   if ([[NSCharacterSet letterCharacterSet] characterIsMember:first]) {
+    if ([self shouldCommitBufferBeforeInput:string]) {
+      [self commitBufferWithSuffix:@"" client:sender];
+    }
     [self.rawBuffer appendString:string];
-    [self updateComposition];
+    [self updateCustomComposition];
     return YES;
   }
 
@@ -242,11 +319,15 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       [[NSCharacterSet punctuationCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet symbolCharacterSet] characterIsMember:first]) {
     if (first == '\r' || first == '\n') {
+      self.expectedCursorLocation = NSNotFound;
+      self.expectedCursorLocationGraphemes = NSNotFound;
       return [self commitBufferAndForwardCommand:@selector(insertNewline:) client:sender];
     }
     if (self.rawBuffer.length > 0) {
       [self commitBufferWithSuffix:@"" client:sender];
     }
+    self.expectedCursorLocation = NSNotFound;
+    self.expectedCursorLocationGraphemes = NSNotFound;
     return NO;
   }
 
@@ -268,6 +349,14 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [self commitComposition:sender];
     return NO;
   }
+  
+  NSString *selectorName = NSStringFromSelector(aSelector);
+  if ([selectorName hasPrefix:@"move"] || [selectorName hasPrefix:@"select"] || [selectorName hasPrefix:@"page"]) {
+    if (self.rawBuffer.length > 0) {
+      [self commitComposition:sender];
+    }
+    return NO;
+  }
   return NO;
 }
 
@@ -281,6 +370,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return [[NSAttributedString alloc] initWithString:self.rawBuffer];
 }
 
+- (void)openHelp {
+  [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://akshara.thimira.com/help"]];
+}
+
 - (void)commitComposition:(id)sender {
   [self commitBufferWithSuffix:@"" client:sender ?: [self client]];
 }
@@ -289,8 +382,22 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return NSMakeRange([self markedString].length, 0);
 }
 
+- (void)activateServer:(id)sender {
+  [super activateServer:sender];
+  [self.rawBuffer setString:@""];
+  self.lastCommittedString = @"";
+  self.expectedCursorLocation = NSNotFound;
+  self.expectedCursorLocationGraphemes = NSNotFound;
+  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
+}
+
 - (void)deactivateServer:(id)sender {
   [self commitComposition:sender];
+  [self.rawBuffer setString:@""];
+  self.lastCommittedString = @"";
+  self.expectedCursorLocation = NSNotFound;
+  self.expectedCursorLocationGraphemes = NSNotFound;
+  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
   [super deactivateServer:sender];
 }
 
@@ -306,6 +413,119 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)checkForUpdatesManually:(id)sender {
   [[AutoUpdater sharedUpdater] checkForUpdatesManually];
+}
+
+- (NSUInteger)graphemeCountForString:(NSString *)string {
+  __block NSUInteger count = 0;
+  [string enumerateSubstringsInRange:NSMakeRange(0, string.length)
+                             options:NSStringEnumerationByComposedCharacterSequences
+                          usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                            (void)substring; (void)substringRange; (void)enclosingRange; (void)stop;
+                            count++;
+                          }];
+  return count;
+}
+
+- (void)deleteBackwardInClient:(id)client count:(NSUInteger)count {
+  for (NSUInteger i = 0; i < count; i++) {
+    if ([client respondsToSelector:@selector(doCommandBySelector:)]) {
+      [client doCommandBySelector:@selector(deleteBackward:)];
+    }
+  }
+}
+
+- (void)updateCustomComposition {
+  id client = [self client];
+  if (!client) {
+    return;
+  }
+  
+  NSString *oldString = self.lastCommittedString ?: @"";
+  NSString *newString = [self markedString];
+  
+  if ([oldString isEqualToString:newString]) {
+    return;
+  }
+  
+  NSMutableArray<NSString *> *oldGraphemes = [NSMutableArray array];
+  [oldString enumerateSubstringsInRange:NSMakeRange(0, oldString.length)
+                                options:NSStringEnumerationByComposedCharacterSequences
+                             usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                               (void)substringRange; (void)enclosingRange; (void)stop;
+                               [oldGraphemes addObject:substring];
+                             }];
+                             
+  NSMutableArray<NSString *> *newGraphemes = [NSMutableArray array];
+  [newString enumerateSubstringsInRange:NSMakeRange(0, newString.length)
+                                options:NSStringEnumerationByComposedCharacterSequences
+                             usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                               (void)substringRange; (void)enclosingRange; (void)stop;
+                               [newGraphemes addObject:substring];
+                             }];
+                             
+  NSUInteger commonCount = 0;
+  NSUInteger minCount = MIN(oldGraphemes.count, newGraphemes.count);
+  for (NSUInteger i = 0; i < minCount; i++) {
+    if ([oldGraphemes[i] isEqualToString:newGraphemes[i]]) {
+      commonCount++;
+    } else {
+      break;
+    }
+  }
+  
+  BOOL isDeletion = (oldGraphemes.count > newGraphemes.count && commonCount == newGraphemes.count);
+  if (isDeletion && newString.length > 0) {
+      commonCount = 0;
+  }
+  
+  NSUInteger graphemesToDelete = oldGraphemes.count - commonCount;
+  
+  NSMutableString *inserts = [NSMutableString string];
+  for (NSUInteger i = commonCount; i < newGraphemes.count; i++) {
+    [inserts appendString:newGraphemes[i]];
+  }
+  
+  NSUInteger unicharsToDelete = 0;
+  for (NSUInteger i = commonCount; i < oldGraphemes.count; i++) {
+    unicharsToDelete += [oldGraphemes[i] length];
+  }
+  
+  if (unicharsToDelete > 0 || inserts.length > 0) {
+    NSRange sel = [client respondsToSelector:@selector(selectedRange)] ? [client selectedRange] : NSMakeRange(NSNotFound, 0);
+    
+    BOOL isNativeApp = (self.expectedCursorLocation == NSNotFound || sel.location == self.expectedCursorLocation);
+    BOOL isGraphemeApp = (self.expectedCursorLocationGraphemes != NSNotFound && sel.location == self.expectedCursorLocationGraphemes);
+    BOOL isBrokenApp = (self.lastReportedRange.location != NSNotFound && sel.location == self.lastReportedRange.location);
+    
+    if (sel.location != NSNotFound && (isNativeApp || (!isGraphemeApp && !isBrokenApp && sel.location >= unicharsToDelete))) {
+      NSRange replaceRange = (unicharsToDelete == 0) ? NSMakeRange(NSNotFound, 0) : NSMakeRange(sel.location - unicharsToDelete, unicharsToDelete);
+      if (inserts.length > 0) {
+        [client insertText:inserts replacementRange:replaceRange];
+      } else if (unicharsToDelete > 0) {
+        [client insertText:@"" replacementRange:replaceRange];
+      }
+      self.expectedCursorLocation = (sel.location - unicharsToDelete) + inserts.length;
+      self.expectedCursorLocationGraphemes = (sel.location - graphemesToDelete) + [self graphemeCountForString:inserts];
+    } else {
+      // For clients where selectedRange returns NSNotFound, graphemes, or is buggy (e.g. Electron / Antigravity / Chromium):
+      if (graphemesToDelete > 0) {
+        [self deleteBackwardInClient:client count:graphemesToDelete];
+      }
+      if (inserts.length > 0) {
+        [self insertString:inserts client:client];
+      }
+      
+      if (sel.location != NSNotFound) {
+        self.expectedCursorLocation = (sel.location - unicharsToDelete) + inserts.length;
+        self.expectedCursorLocationGraphemes = (sel.location - graphemesToDelete) + [self graphemeCountForString:inserts];
+      } else {
+        self.expectedCursorLocation = NSNotFound;
+        self.expectedCursorLocationGraphemes = NSNotFound;
+      }
+    }
+  }
+  
+  self.lastCommittedString = newString;
 }
 
 @end
