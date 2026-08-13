@@ -124,7 +124,7 @@ cat >"$PKG_DISTRIBUTION" <<XML
   <choice id="akshara" title="Akshara Sinhala Input Method">
     <pkg-ref id="$BUNDLE_ID.pkg"/>
   </choice>
-  <pkg-ref id="$BUNDLE_ID.pkg" version="$VERSION" onConclusion="none">$(basename "$COMPONENT_PKG")</pkg-ref>
+  <pkg-ref id="$BUNDLE_ID.pkg" version="$VERSION" onConclusion="RequireRestart">$(basename "$COMPONENT_PKG")</pkg-ref>
 </installer-gui-script>
 XML
 

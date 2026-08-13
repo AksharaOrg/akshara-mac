@@ -36,3 +36,13 @@ killall cfprefsd 2>/dev/null || true
 
 echo "Installed $DST"
 echo "Log out/in if it does not appear immediately in System Settings > Keyboard > Input Sources."
+
+/usr/bin/osascript -e '
+tell application "System Events"
+    activate
+    set dialogResult to display dialog "Akshara keyboard has been installed successfully.\n\nYou need to restart your Mac to apply the changes." with title "Restart Required" buttons {"Not now", "Restart"} default button "Restart" cancel button "Not now" with icon caution
+    if button returned of dialogResult is "Restart" then
+        restart
+    end if
+end tell
+' || true
