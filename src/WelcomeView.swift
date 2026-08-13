@@ -16,6 +16,8 @@ struct WelcomeView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 32)
 
             VStack(alignment: .leading, spacing: 14) {
                 // 1
@@ -58,6 +60,7 @@ struct WelcomeView: View {
                         )
                     }
                     .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
                             .fill(Color(NSColor.controlBackgroundColor).opacity(0.5))
@@ -69,6 +72,7 @@ struct WelcomeView: View {
                 StepRow(number: "6", title: "Open the input source menu and switch")
             }
             .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color(NSColor.windowBackgroundColor).opacity(0.5))
@@ -79,15 +83,6 @@ struct WelcomeView: View {
             )
 
             HStack {
-                Button(action: {
-                    onDismiss?()
-                }) {
-                    Text("Close")
-                        .font(.system(size: 12, weight: .regular))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-
                 Spacer()
 
                 Button(action: {
@@ -101,18 +96,16 @@ struct WelcomeView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+
+                Spacer()
             }
+
         }
         .padding(12)
         .frame(width: 400)
-        .background(
-            ZStack {
-                VisualEffectBackground()
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-            }
-        )
+        .background(VisualEffectBackground())
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .edgesIgnoringSafeArea(.all)
     }
 
     private func openKeyboardSettings() {
@@ -152,6 +145,7 @@ struct StepRow<Content: View>: View {
 
                 content
             }
+            Spacer()
         }
     }
 }
@@ -182,7 +176,6 @@ class DraggableVisualEffectView: NSVisualEffectView {
         window?.performDrag(with: event)
     }
 }
-
 
 struct VisualEffectBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {

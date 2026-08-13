@@ -1,16 +1,6 @@
 import Cocoa
 import SwiftUI
 
-class BorderlessKeyWindow: NSWindow {
-    override var canBecomeKey: Bool {
-        return true
-    }
-
-    override var canBecomeMain: Bool {
-        return true
-    }
-}
-
 @objc public class WelcomeWindowManager: NSObject {
     @objc public static let shared = WelcomeWindowManager()
 
@@ -33,14 +23,17 @@ class BorderlessKeyWindow: NSWindow {
 
         let hostingController = NSHostingController(rootView: welcomeView)
 
-        let newWindow = BorderlessKeyWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 460),
-            styleMask: [.borderless],
+        let newWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 490),
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
 
         newWindow.center()
+        newWindow.title = ""
+        newWindow.titlebarAppearsTransparent = true
+        newWindow.titleVisibility = .hidden
         newWindow.isOpaque = false
         newWindow.backgroundColor = .clear
         newWindow.hasShadow = true
