@@ -18,13 +18,14 @@ PKG_SCRIPTS="$ROOT/build/pkg-scripts"
 PKG_RESOURCES="$ROOT/build/pkg-resources"
 PKG_DISTRIBUTION="$ROOT/build/Distribution.xml"
 COMPONENT_PKG="$ROOT/build/$APP_NAME-component.pkg"
+COMPONENT_PLIST="$ROOT/build/$APP_NAME-component.plist"
 FINAL_PKG="$DIST_DIR/$APP_NAME-$VERSION.pkg"
 
 export COPYFILE_DISABLE=1
 
 "$ROOT/script/build_and_run.sh" build
 
-rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$FINAL_PKG"
+rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST" "$FINAL_PKG"
 mkdir -p "$PKG_ROOT/Library/Input Methods" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$DIST_DIR"
 
 cp -R "$APP" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app"
@@ -102,12 +103,19 @@ cat >"$PKG_RESOURCES/welcome.html" <<HTML
 </html>
 HTML
 
+# Input methods must stay in /Library/Input Methods.  If this is left
+# relocatable, PackageKit can follow a prior user-level installation and leave
+# the system location empty after an upgrade.
+/usr/bin/pkgbuild --analyze --root "$PKG_ROOT" "$COMPONENT_PLIST"
+/usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENT_PLIST"
+
 /usr/bin/pkgbuild \
-  --component "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" \
+  --root "$PKG_ROOT" \
+  --component-plist "$COMPONENT_PLIST" \
   --scripts "$PKG_SCRIPTS" \
   --identifier "$BUNDLE_ID.pkg" \
   --version "$VERSION" \
-  --install-location "/Library/Input Methods" \
+  --install-location "/" \
   "$COMPONENT_PKG"
 
 cat >"$PKG_DISTRIBUTION" <<XML

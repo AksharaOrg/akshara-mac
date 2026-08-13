@@ -4,6 +4,7 @@
 
 @interface AutoUpdater () <UNUserNotificationCenterDelegate>
 @property (nonatomic, strong) NSString *downloadUrl;
+@property (nonatomic, strong) NSString *availableVersion;
 @property (nonatomic, strong) NSURLSessionDownloadTask *downloadTask;
 @end
 
@@ -59,21 +60,41 @@
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        (void)response;
-        if (error || !data) return;
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        if (error || !data || httpResponse.statusCode != 200) {
+            if (isManual) {
+                [self showManualCheckError];
+            }
+            return;
+        }
         
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        if (![json isKindOfClass:[NSDictionary class]]) return;
+        if (![json isKindOfClass:[NSDictionary class]]) {
+            if (isManual) {
+                [self showManualCheckError];
+            }
+            return;
+        }
         
         NSString *tagName = json[@"tag_name"];
-        if (!tagName) return;
+        if (!tagName) {
+            if (isManual) {
+                [self showManualCheckError];
+            }
+            return;
+        }
         
         if ([tagName hasPrefix:@"v"]) {
             tagName = [tagName substringFromIndex:1];
         }
         
         NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-        if (!currentVersion) return;
+        if (!currentVersion) {
+            if (isManual) {
+                [self showManualCheckError];
+            }
+            return;
+        }
         
         if ([tagName compare:currentVersion options:NSNumericSearch] == NSOrderedDescending) {
             NSArray *assets = json[@"assets"];
@@ -87,14 +108,58 @@
             }
             
             if (pkgUrl) {
-                self.downloadUrl = pkgUrl;
-                [self showUpdateNotificationForVersion:tagName];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.downloadUrl = pkgUrl;
+                    self.availableVersion = tagName;
+                    [self showUpdateNotificationForVersion:tagName];
+                    if (isManual) {
+                        [self showManualUpdateAlertForVersion:tagName];
+                    }
+                });
+            } else if (isManual) {
+                [self showManualCheckError];
             }
         } else if (isManual) {
             [self showUpToDateNotification];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self showManualUpToDateAlert];
+            });
         }
     }];
     [task resume];
+}
+
+- (BOOL)isUpdateAvailable {
+    return self.downloadUrl.length > 0 && self.availableVersion.length > 0;
+}
+
+- (void)showManualUpdateAlertForVersion:(NSString *)version {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"Akshara Update Available";
+    alert.informativeText = [NSString stringWithFormat:@"Version %@ is ready to install.", version];
+    [alert addButtonWithTitle:@"Install Update"];
+    [alert addButtonWithTitle:@"Later"];
+    if ([alert runModal] == NSAlertFirstButtonReturn) {
+        [self downloadAndInstallUpdate];
+    }
+}
+
+- (void)showManualUpToDateAlert {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"Akshara is Up to Date";
+    alert.informativeText = @"You are already running the latest version of Akshara.";
+    [alert addButtonWithTitle:@"OK"];
+    [alert runModal];
+}
+
+- (void)showManualCheckError {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Unable to Check for Updates";
+        alert.informativeText = @"Please check your internet connection and try again.";
+        [alert addButtonWithTitle:@"OK"];
+        [alert runModal];
+    });
 }
 
 - (void)showUpToDateNotification {

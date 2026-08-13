@@ -6,5 +6,8 @@
 - (void)startCheckingForUpdates;
 - (void)checkForUpdatesNow;
 - (void)checkForUpdatesManually;
+- (BOOL)isUpdateAvailable;
+- (NSString *)availableVersion;
+- (void)downloadAndInstallUpdate;
 
 @end

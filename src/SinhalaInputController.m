@@ -3,6 +3,165 @@
 #import "AutoUpdater.h"
 #import <Carbon/Carbon.h>
 
+@interface AksharaKeyboardLayoutView : NSView
+@property(nonatomic, assign) BOOL shiftActive;
+@property(nonatomic, assign) BOOL optionActive;
+@property(nonatomic, assign) NSRect leftShiftRect;
+@property(nonatomic, assign) NSRect leftOptionRect;
+@property(nonatomic, assign) NSRect rightOptionRect;
+@end
+
+@implementation AksharaKeyboardLayoutView
+
+- (void)drawRect:(NSRect)dirtyRect {
+  (void)dirtyRect;
+  [[NSColor windowBackgroundColor] setFill];
+  NSRectFill(self.bounds);
+
+  NSArray<NSArray<NSArray<NSString *> *> *> *layers = @[
+    @[
+      @[@"◌්‍ර", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"0", @"-", @"="],
+      @[@"◌ු", @"අ", @"◌ැ", @"ර", @"එ", @"හ", @"ම", @"ස", @"ද", @"ච", @"ඤ", @";"],
+      @[@"◌්", @"◌ි", @"◌ා", @"◌ෙ", @"ට", @"ය", @"ව", @"න", @"ක", @"ත", @"."],
+      @[@"'", @"ං", @"ජ", @"ඩ", @"ඉ", @"බ", @"ප", @"ල", @"ග", @"/"]
+    ],
+    @[
+      @[@"ර්", @"!", @"@", @"#", @"$", @"%", @"^", @"&", @"*", @"(", @")", @"_", @"+"],
+      @[@"◌ූ", @"උ", @"◌ෑ", @"ඍ", @"ඔ", @"ශ", @"ඹ", @"ෂ", @"ධ", @"ඡ", @"ඕ", @":"],
+      @[@"◌ෟ", @"◌ී", @"◌ෘ", @"ෆ", @"ඨ", @"", @"ළු", @"ණ", @"ඛ", @"ථ", @","],
+      @[@"\"", @"ඞ", @"ඣ", @"ඪ", @"ඊ", @"භ", @"ඵ", @"ළ", @"ඝ", @"?"]
+    ],
+    @[
+      @[@"", @"", @"", @"", @"", @"", @"", @"", @"", @"", @"", @"", @""],
+      @[@"", @"", @"", @"", @"ඳ", @"", @"", @"", @"", @"", @"", @""],
+      @[@"◌ෳ", @"", @"", @"", @"", @"", @"", @"", @"", @"", @"෴"],
+      @[@"", @"ඃ", @"ඦ", @"ඬ", @"", @"", @"", @"ඏ", @"ඟ", @""]
+    ]
+  ];
+  NSInteger activeLayerIndex = self.optionActive ? 2 : (self.shiftActive ? 1 : 0);
+  NSArray<NSArray<NSString *> *> *rows = layers[activeLayerIndex];
+
+  NSFont *sinhalaFont = [NSFont fontWithName:@"Sinhala Sangam MN" size:20] ?: [NSFont systemFontOfSize:20 weight:NSFontWeightMedium];
+  NSDictionary *attributes = @{
+    NSFontAttributeName: sinhalaFont,
+    NSForegroundColorAttributeName: [NSColor labelColor]
+  };
+  CGFloat keyWidth = 48.0;
+  CGFloat keyHeight = 44.0;
+  CGFloat gap = 6.0;
+  [@"Akshara Wijesekara" drawAtPoint:NSMakePoint(24, self.bounds.size.height - 31)
+                        withAttributes:@{
+    NSFontAttributeName: [NSFont systemFontOfSize:17 weight:NSFontWeightSemibold],
+    NSForegroundColorAttributeName: [NSColor labelColor]
+  }];
+  [@"Click Shift or Option on the keyboard to inspect that layer." drawAtPoint:NSMakePoint(500, self.bounds.size.height - 30)
+                                                                 withAttributes:@{
+    NSFontAttributeName: [NSFont systemFontOfSize:12],
+    NSForegroundColorAttributeName: [NSColor secondaryLabelColor]
+  }];
+
+  NSArray<NSArray<NSString *> *> *prefixes = @[@[@"`"], @[@"Tab"], @[@"Caps Lock"], @[@"Shift"]];
+  NSArray<NSArray<NSString *> *> *suffixes = @[@[@"Delete"], @[@"\\"], @[@"Return"], @[@"Shift"]];
+  NSArray<NSNumber *> *prefixWidths = @[@52, @74, @92, @116];
+  NSArray<NSNumber *> *suffixWidths = @[@78, @58, @88, @116];
+  CGFloat startY = self.bounds.size.height - 86.0;
+  for (NSUInteger rowIndex = 0; rowIndex < rows.count; rowIndex++) {
+    NSArray<NSString *> *row = rows[rowIndex];
+    CGFloat prefixWidth = prefixWidths[rowIndex].doubleValue;
+    CGFloat suffixWidth = suffixWidths[rowIndex].doubleValue;
+    CGFloat rowWidth = prefixWidth + gap + row.count * keyWidth + (row.count - 1) * gap + gap + suffixWidth;
+    CGFloat x = (self.bounds.size.width - rowWidth) / 2.0;
+    CGFloat y = startY - rowIndex * (keyHeight + gap);
+    NSRect prefixRect = NSMakeRect(x, y, prefixWidth, keyHeight);
+    BOOL prefixActive = rowIndex == 3 && self.shiftActive;
+    NSBezierPath *prefixPath = [NSBezierPath bezierPathWithRoundedRect:prefixRect xRadius:6 yRadius:6];
+    [(prefixActive ? [NSColor controlAccentColor] : [NSColor controlBackgroundColor]) setFill];
+    [prefixPath fill];
+    [[NSColor separatorColor] setStroke];
+    [prefixPath stroke];
+    NSDictionary *modifierAttributes = @{
+      NSFontAttributeName: [NSFont systemFontOfSize:12 weight:NSFontWeightMedium],
+      NSForegroundColorAttributeName: (prefixActive ? [NSColor whiteColor] : [NSColor labelColor])
+    };
+    NSString *prefix = prefixes[rowIndex].firstObject;
+    NSSize prefixSize = [prefix sizeWithAttributes:modifierAttributes];
+    [prefix drawAtPoint:NSMakePoint(NSMidX(prefixRect) - prefixSize.width / 2.0, NSMidY(prefixRect) - prefixSize.height / 2.0)
+       withAttributes:modifierAttributes];
+    if (rowIndex == 3) {
+      self.leftShiftRect = prefixRect;
+    }
+    x += prefixWidth + gap;
+    for (NSString *label in row) {
+      NSRect keyRect = NSMakeRect(x, y, keyWidth, keyHeight);
+      NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:keyRect xRadius:6 yRadius:6];
+      [[NSColor controlBackgroundColor] setFill];
+      [path fill];
+      [[NSColor separatorColor] setStroke];
+      [path stroke];
+      NSSize size = [label sizeWithAttributes:attributes];
+      [label drawAtPoint:NSMakePoint(NSMidX(keyRect) - size.width / 2.0,
+                                    NSMidY(keyRect) - size.height / 2.0)
+         withAttributes:attributes];
+      x += keyWidth + gap;
+    }
+    NSRect suffixRect = NSMakeRect(x, y, suffixWidth, keyHeight);
+    BOOL suffixActive = rowIndex == 3 && self.shiftActive;
+    NSBezierPath *suffixPath = [NSBezierPath bezierPathWithRoundedRect:suffixRect xRadius:6 yRadius:6];
+    [(suffixActive ? [NSColor controlAccentColor] : [NSColor controlBackgroundColor]) setFill];
+    [suffixPath fill];
+    [[NSColor separatorColor] setStroke];
+    [suffixPath stroke];
+    NSString *suffix = suffixes[rowIndex].firstObject;
+    NSSize suffixSize = [suffix sizeWithAttributes:modifierAttributes];
+    [suffix drawAtPoint:NSMakePoint(NSMidX(suffixRect) - suffixSize.width / 2.0, NSMidY(suffixRect) - suffixSize.height / 2.0)
+       withAttributes:modifierAttributes];
+  }
+
+  CGFloat bottomY = 52.0;
+  NSArray<NSString *> *bottomLabels = @[@"fn", @"⌃", @"⌥ Option", @"⌘", @"", @"⌘", @"⌥ Option"];
+  NSArray<NSNumber *> *bottomWidths = @[@50, @50, @82, @58, @310, @58, @82];
+  CGFloat bottomWidth = 0;
+  for (NSNumber *width in bottomWidths) bottomWidth += width.doubleValue;
+  bottomWidth += gap * (bottomLabels.count - 1);
+  CGFloat bottomX = (self.bounds.size.width - bottomWidth) / 2.0;
+  for (NSUInteger index = 0; index < bottomLabels.count; index++) {
+    CGFloat width = bottomWidths[index].doubleValue;
+    NSRect keyRect = NSMakeRect(bottomX, bottomY, width, keyHeight);
+    BOOL optionKey = (index == 2 || index == 6);
+    NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:keyRect xRadius:6 yRadius:6];
+    [(optionKey && self.optionActive ? [NSColor controlAccentColor] : [NSColor controlBackgroundColor]) setFill];
+    [path fill];
+    [[NSColor separatorColor] setStroke];
+    [path stroke];
+    NSDictionary *bottomAttributes = @{
+      NSFontAttributeName: [NSFont systemFontOfSize:12 weight:NSFontWeightMedium],
+      NSForegroundColorAttributeName: (optionKey && self.optionActive ? [NSColor whiteColor] : [NSColor labelColor])
+    };
+    NSString *label = bottomLabels[index];
+    NSSize size = [label sizeWithAttributes:bottomAttributes];
+    [label drawAtPoint:NSMakePoint(NSMidX(keyRect) - size.width / 2.0, NSMidY(keyRect) - size.height / 2.0)
+       withAttributes:bottomAttributes];
+    if (index == 2) self.leftOptionRect = keyRect;
+    if (index == 6) self.rightOptionRect = keyRect;
+    bottomX += width + gap;
+  }
+}
+
+- (void)mouseDown:(NSEvent *)event {
+  NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+  if (NSPointInRect(point, self.leftShiftRect)) {
+    self.shiftActive = !self.shiftActive;
+    if (self.shiftActive) self.optionActive = NO;
+    [self setNeedsDisplay:YES];
+  } else if (NSPointInRect(point, self.leftOptionRect) || NSPointInRect(point, self.rightOptionRect)) {
+    self.optionActive = !self.optionActive;
+    if (self.optionActive) self.shiftActive = NO;
+    [self setNeedsDisplay:YES];
+  }
+}
+
+@end
+
 @interface SinhalaInputController ()
 @property(nonatomic, strong) NSMutableString *rawBuffer;
 @property(nonatomic, strong) NSDate *lastSpaceTime;
@@ -10,6 +169,7 @@
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
 @property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
 @property(nonatomic, assign) NSRange lastReportedRange;
+@property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
@@ -63,7 +223,6 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   }
 
   NSDictionary *properties = @{
-    (__bridge NSString *)kTISPropertyBundleID: [[NSBundle mainBundle] bundleIdentifier],
     (__bridge NSString *)kTISPropertyInputSourceType: (__bridge NSString *)kTISTypeKeyboardLayout
   };
   // Private layouts are installed but intentionally never enabled/selectable.
@@ -433,6 +592,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)activateServer:(id)sender {
   [super activateServer:sender];
+  // Keyboard Viewer asks for the active input method's layout as soon as the
+  // source is selected, before the first key event reaches inputText:.
+  [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
   [self.rawBuffer setString:@""];
   self.lastCommittedString = @"";
   self.expectedCursorLocation = NSNotFound;
@@ -452,12 +614,48 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (NSMenu *)menu {
   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Akshara Menu"];
-  NSMenuItem *updateItem = [[NSMenuItem alloc] initWithTitle:@"Check for Updates..."
-                                                      action:@selector(checkForUpdatesManually:)
+  AutoUpdater *updater = [AutoUpdater sharedUpdater];
+  BOOL updateAvailable = [updater isUpdateAvailable];
+  NSString *title = updateAvailable
+      ? [NSString stringWithFormat:@"Install Akshara %@...", [updater availableVersion]]
+      : @"Check for Updates...";
+  NSMenuItem *updateItem = [[NSMenuItem alloc] initWithTitle:title
+                                                      action:updateAvailable ? @selector(installAvailableUpdate:) : @selector(checkForUpdatesManually:)
                                                keyEquivalent:@""];
   updateItem.target = self;
   [menu addItem:updateItem];
+  [menu addItem:[NSMenuItem separatorItem]];
+  NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Show Wijesekara Keyboard"
+                                                         action:@selector(showWijesekaraKeyboard:)
+                                                  keyEquivalent:@""];
+  keyboardItem.target = self;
+  [menu addItem:keyboardItem];
   return menu;
+}
+
+- (void)showWijesekaraKeyboard:(id)sender {
+  (void)sender;
+  if (!self.keyboardLayoutPanel) {
+    NSRect frame = NSMakeRect(0, 0, 850, 350);
+    self.keyboardLayoutPanel = [[NSPanel alloc] initWithContentRect:frame
+                                                            styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskUtilityWindow)
+                                                              backing:NSBackingStoreBuffered
+                                                                defer:NO];
+    self.keyboardLayoutPanel.title = @"Akshara Wijesekara Keyboard";
+    self.keyboardLayoutPanel.contentView = [[AksharaKeyboardLayoutView alloc] initWithFrame:frame];
+    self.keyboardLayoutPanel.releasedWhenClosed = NO;
+    self.keyboardLayoutPanel.level = NSFloatingWindowLevel;
+    self.keyboardLayoutPanel.hidesOnDeactivate = NO;
+    self.keyboardLayoutPanel.becomesKeyOnlyIfNeeded = NO;
+  }
+  [self.keyboardLayoutPanel orderFrontRegardless];
+  [self.keyboardLayoutPanel makeKeyWindow];
+  [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+}
+
+- (void)installAvailableUpdate:(id)sender {
+  (void)sender;
+  [[AutoUpdater sharedUpdater] downloadAndInstallUpdate];
 }
 
 - (void)checkForUpdatesManually:(id)sender {
