@@ -1,8 +1,10 @@
 #import "SinhalaInputController.h"
 #import "SinhalaTransliterator.h"
 #import "AutoUpdater.h"
+#import "Akshara-Swift.h"
 #import <Carbon/Carbon.h>
 
+<<<<<<< HEAD
 @interface AksharaKeyboardLayoutView : NSView
 @property(nonatomic, assign) BOOL shiftActive;
 @property(nonatomic, assign) BOOL optionActive;
@@ -614,6 +616,15 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (NSMenu *)menu {
   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Akshara Menu"];
+
+  NSMenuItem *welcomeItem = [[NSMenuItem alloc] initWithTitle:@"Welcome & Setup Guide..."
+                                                       action:@selector(showWelcomeWindow:)
+                                                keyEquivalent:@""];
+  welcomeItem.target = self;
+  [menu addItem:welcomeItem];
+
+  [menu addItem:[NSMenuItem separatorItem]];
+
   AutoUpdater *updater = [AutoUpdater sharedUpdater];
   BOOL updateAvailable = [updater isUpdateAvailable];
   NSString *title = updateAvailable
@@ -633,14 +644,19 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return menu;
 }
 
+- (void)showWelcomeWindow:(id)sender {
+  (void)sender;
+  [WelcomeWindowManager.shared showWelcomeWindow];
+}
+
 - (void)showWijesekaraKeyboard:(id)sender {
   (void)sender;
   if (!self.keyboardLayoutPanel) {
     NSRect frame = NSMakeRect(0, 0, 850, 350);
     self.keyboardLayoutPanel = [[NSPanel alloc] initWithContentRect:frame
                                                             styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskUtilityWindow)
-                                                              backing:NSBackingStoreBuffered
-                                                                defer:NO];
+                                                             backing:NSBackingStoreBuffered
+                                                               defer:NO];
     self.keyboardLayoutPanel.title = @"Akshara Wijesekara Keyboard";
     self.keyboardLayoutPanel.contentView = [[AksharaKeyboardLayoutView alloc] initWithFrame:frame];
     self.keyboardLayoutPanel.releasedWhenClosed = NO;
