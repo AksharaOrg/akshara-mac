@@ -82,8 +82,17 @@ struct WelcomeView: View {
                     )
             )
 
-            HStack {
+            HStack(spacing: 2) {
                 Spacer()
+
+                Button(action: openGitHubRepo) {
+                    GitHubIconView()
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(.bordered)
+                .clipShape(Circle())
+                .controlSize(.large)
+                .help("View on GitHub")
 
                 Button(action: {
                     onDismiss?()
@@ -110,6 +119,12 @@ struct WelcomeView: View {
 
     private func openKeyboardSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.PreferenceKey.Keyboard") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func openGitHubRepo() {
+        if let url = URL(string: "https://github.com/AksharaOrg/akshara-mac") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -163,6 +178,20 @@ struct OptionDetailRow: View {
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+struct GitHubIconView: View {
+    var body: some View {
+        if let path = Bundle.main.path(forResource: "github", ofType: "svg") ?? (FileManager.default.fileExists(atPath: "/Users/sameerasandakelum/Downloads/github.svg") ? "/Users/sameerasandakelum/Downloads/github.svg" : nil),
+           let img = NSImage(contentsOfFile: path) {
+            Image(nsImage: img)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+        } else {
+            Image(systemName: "globe")
         }
     }
 }
