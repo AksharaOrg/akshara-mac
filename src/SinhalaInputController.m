@@ -4,7 +4,6 @@
 #import "Akshara-Swift.h"
 #import <Carbon/Carbon.h>
 
-<<<<<<< HEAD
 @interface AksharaKeyboardLayoutView : NSView
 @property(nonatomic, assign) BOOL shiftActive;
 @property(nonatomic, assign) BOOL optionActive;

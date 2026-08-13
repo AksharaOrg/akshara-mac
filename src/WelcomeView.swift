@@ -184,7 +184,7 @@ struct OptionDetailRow: View {
 
 struct GitHubIconView: View {
     var body: some View {
-        if let path = Bundle.main.path(forResource: "github", ofType: "svg") ?? (FileManager.default.fileExists(atPath: "/Users/sameerasandakelum/Downloads/github.svg") ? "/Users/sameerasandakelum/Downloads/github.svg" : nil),
+        if let path = Bundle.main.path(forResource: "github", ofType: "svg"),
            let img = NSImage(contentsOfFile: path) {
             Image(nsImage: img)
                 .resizable()
