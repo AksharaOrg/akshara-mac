@@ -11,6 +11,7 @@
 @property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
 @property(nonatomic, assign) NSRange lastReportedRange;
 - (void)updateCustomComposition;
+- (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
 
 @implementation SinhalaInputController
@@ -24,6 +25,7 @@
     _expectedCursorLocationGraphemes = NSNotFound;
     _lastReportedRange = NSMakeRange(NSNotFound, 0);
     [[AutoUpdater sharedUpdater] startCheckingForUpdates];
+    [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
   }
   return self;
 }
@@ -48,6 +50,37 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   }
   CFRelease(source);
   return mode;
+}
+
+// The Wijesekara mode has a private .keylayout in the input-method bundle.
+// Besides making the Keyboard Viewer useful, setting it as the override is
+// the supported way for an IME to tell macOS which physical keyboard its mode
+// represents.  The layout is non-selectable, so it never appears as another
+// input source in System Settings.
+- (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode {
+  if (mode != AksharaInputModeWijesekara) {
+    return;
+  }
+
+  NSDictionary *properties = @{
+    (__bridge NSString *)kTISPropertyBundleID: [[NSBundle mainBundle] bundleIdentifier],
+    (__bridge NSString *)kTISPropertyInputSourceType: (__bridge NSString *)kTISTypeKeyboardLayout
+  };
+  // Private layouts are installed but intentionally never enabled/selectable.
+  CFArrayRef sources = TISCreateInputSourceList((__bridge CFDictionaryRef)properties, true);
+  if (!sources) {
+    return;
+  }
+
+  for (id item in (__bridge NSArray *)sources) {
+    TISInputSourceRef source = (__bridge TISInputSourceRef)item;
+    NSString *name = (__bridge NSString *)TISGetInputSourceProperty(source, kTISPropertyLocalizedName);
+    if ([name isEqualToString:@"Akshara Wijesekara"]) {
+      TISSetInputMethodKeyboardLayoutOverride(source);
+      break;
+    }
+  }
+  CFRelease(sources);
 }
 
 - (void)insertString:(NSString *)string client:(id)sender {
@@ -251,6 +284,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   }
 
   AksharaInputMode mode = [self currentInputMode];
+  [self applyKeyboardLayoutOverrideForMode:mode];
   BOOL isPhonetic = (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic);
   NSUInteger blockedModifiers = isPhonetic
       ? (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption)
@@ -296,7 +330,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     }
     BOOL shifted = (flags & NSEventModifierFlagShift) != 0;
     BOOL altGr = (flags & NSEventModifierFlagOption) != 0;
-    NSString *lookup = altGr ? [self usKeyStringForKeyCode:keyCode shifted:shifted] ?: string : string;
+    // The private keyboard-layout override translates the event string to its
+    // visible Sinhala label.  The transliterator deliberately works from the
+    // physical US key so its existing SLS logic remains unchanged.
+    NSString *lookup = [self usKeyStringForKeyCode:keyCode shifted:shifted] ?: string;
     NSString *mapped = [SinhalaTransliterator slsCharacterForInput:lookup shifted:shifted altGr:altGr];
     if ([SinhalaTransliterator isSinhalaInputUnit:mapped]) {
       [self.rawBuffer appendString:mapped];
