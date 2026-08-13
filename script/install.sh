@@ -40,8 +40,8 @@ echo "Log out/in if it does not appear immediately in System Settings > Keyboard
 /usr/bin/osascript -e '
 tell application "System Events"
     activate
-    set dialogResult to display dialog "Akshara keyboard has been installed successfully.\n\nYou need to restart your Mac to apply the changes." with title "Restart Required" buttons {"Not now", "Restart"} default button "Restart" cancel button "Not now" with icon caution
-    if button returned of dialogResult is "Restart" then
+    set dialogResult to display dialog "Akshara has been installed. Restarting now is recommended: without a restart, the input method may not appear or work correctly until you log out and back in." with title "Restart Recommended" buttons {"Restart Later", "Restart Now"} default button "Restart Now" cancel button "Restart Later" with icon caution
+    if button returned of dialogResult is "Restart Now" then
         restart
     end if
 end tell
