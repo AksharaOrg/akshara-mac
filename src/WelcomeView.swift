@@ -15,6 +15,7 @@ class WelcomeViewModel: ObservableObject {
     @Published var showTitle = false
     @Published var showSubtitle = false
     @Published var showStartButton = false
+    @Published var instructionStep = 0
     
     private var checkTimer: Timer?
 
@@ -205,6 +206,7 @@ struct WelcomeView: View {
                     openKeyboardSettings()
                     withAnimation(.easeInOut(duration: 0.5)) {
                         viewModel.currentScreen = .instructions
+                        viewModel.instructionStep = 0
                     }
                 }) {
                     HStack(spacing: 5) {
@@ -232,53 +234,78 @@ struct WelcomeView: View {
 
     private var instructionsView: some View {
         VStack(spacing: 0) {
-            header
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Let’s set up Sinhala typing")
-                    .font(.headline)
-
-                Text("It only takes a moment. Choose the layout that feels most natural to you.")
-                    .font(.callout)
-                    .foregroundColor(.secondary)
-
-                VStack(alignment: .leading, spacing: 12) {
-                    SetupStep(number: 1, text: "Open Keyboard settings.") {
-                        Button("Open Keyboard Settings", action: openKeyboardSettings)
-                            .controlSize(.small)
+            ZStack {
+                if viewModel.instructionStep == 0 {
+                    CarouselStepView(
+                        imagePath: "welcome/welcome-1.png",
+                        title: "Open Keyboard Settings",
+                        description: "You've just opened the settings. Next, we will add the keyboard."
+                    ).transition(.opacity)
+                } else if viewModel.instructionStep == 1 {
+                    CarouselStepView(
+                        imagePath: "welcome/welcome-2.png",
+                        title: "Edit Input Sources",
+                        description: "Scroll down to 'Input Sources' or 'Text Input' and click the 'Edit...' button."
+                    ).transition(.opacity)
+                } else if viewModel.instructionStep == 2 {
+                    CarouselStepView(
+                        imagePath: "welcome/welcome-3.png",
+                        title: "Add a New Keyboard",
+                        description: "Click the Add (+) button at the bottom left of the input sources list."
+                    ).transition(.opacity)
+                } else if viewModel.instructionStep == 3 {
+                    VStack(spacing: 8) {
+                        if let url = Bundle.main.resourceURL?.appendingPathComponent("welcome/welcome-4.png"),
+                           let img = NSImage(contentsOf: url) {
+                            Image(nsImage: img)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 200)
+                                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                        }
+                            
+                        GroupBox("Available Layouts") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                LayoutChoice(
+                                    title: "Akshara – Phonetic",
+                                    description: "Type Sinhala with familiar Roman letters, such as amma → අම්ම."
+                                )
+                                LayoutChoice(
+                                    title: "Akshara – Smart Phonetic",
+                                    description: "A faster phonetic style with handy combinations, such as Aa for ඇ."
+                                )
+                                LayoutChoice(
+                                    title: "Akshara – SLS1134",
+                                    description: "The familiar Wijesekara layout, with visual kombuva reordering."
+                                )
+                            }
+                            .padding(6)
+                        }
+                        .frame(maxWidth: 380)
+                        
+                        Spacer(minLength: 16)
+                        
+                        Text("Search & Choose Layout")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                        Text("Search for 'Sinhala' and select an Akshara layout.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    SetupStep(number: 2, text: "Choose Input Sources, then select Edit.")
-                    SetupStep(number: 3, text: "Select the Add (+) button below your input sources.")
-                    SetupStep(number: 4, text: "Search for Sinhala, then choose an Akshara layout.")
+                    .padding(.horizontal, 32)
+                    .padding(.top, 32)
+                    .padding(.bottom, 8)
+                    .transition(.opacity)
+                } else if viewModel.instructionStep == 4 {
+                    CarouselStepView(
+                        imagePath: "welcome/welcome-5.png",
+                        title: "Select from Menu Bar",
+                        description: "Once added, choose Akshara from the input menu in your menu bar whenever you’re ready to type."
+                    ).transition(.opacity)
                 }
-
-                GroupBox("Choose a typing style") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        LayoutChoice(
-                            title: "Akshara – Phonetic",
-                            description: "Type Sinhala with familiar Roman letters, such as amma → අම්ම."
-                        )
-                        LayoutChoice(
-                            title: "Akshara – Smart Phonetic",
-                            description: "A faster phonetic style with handy combinations, such as Aa for ඇ."
-                        )
-                        LayoutChoice(
-                            title: "Akshara – SLS1134",
-                            description: "The familiar Wijesekara layout, with visual kombuva reordering."
-                        )
-                    }
-                    .padding(.top, 3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                SetupStep(number: 5, text: "Choose Akshara from the menu bar whenever you’re ready to type.")
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Divider()
+            .frame(maxHeight: .infinity)
 
             HStack {
                 Button(action: openGitHubRepo) {
@@ -288,15 +315,45 @@ struct WelcomeView: View {
                 .help("View Akshara on GitHub")
 
                 Spacer()
-
-                Button("Close") {
-                    onDismiss?()
+                
+                if viewModel.instructionStep > 0 {
+                    Button(action: {
+                        withAnimation {
+                            viewModel.instructionStep -= 1
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
+
+                if viewModel.instructionStep < 4 {
+                    Button(action: {
+                        withAnimation {
+                            viewModel.instructionStep += 1
+                        }
+                    }) {
+                        HStack {
+                            Text("Next")
+                            Image(systemName: "chevron.right")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else {
+                    Button(action: {
+                        onDismiss?()
+                    }) {
+                        Text("Continue")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 32)
+            .padding(.top, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -376,29 +433,45 @@ struct WelcomeView: View {
 }
 
 @available(macOS 11.0, *)
-private struct SetupStep<Content: View>: View {
-    let number: Int
-    let text: String
-    let content: Content
-
-    init(number: Int, text: String, @ViewBuilder content: () -> Content = { EmptyView() }) {
-        self.number = number
-        self.text = text
-        self.content = content()
-    }
+private struct CarouselStepView: View {
+    var icon: String? = nil
+    var imagePath: String? = nil
+    let title: String
+    let description: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 9) {
-            Text("\(number).")
-                .foregroundColor(.secondary)
-                .frame(width: 16, alignment: .trailing)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(text)
-                content
+        VStack(spacing: 6) {
+            if let imagePath = imagePath,
+               let url = Bundle.main.resourceURL?.appendingPathComponent(imagePath),
+               let img = NSImage(contentsOf: url) {
+                Image(nsImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxHeight: 340)
+                    .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+            } else if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 80))
+                    .foregroundColor(.accentColor)
+                    .frame(maxHeight: 340)
             }
+            
+            Spacer(minLength: 16)
+            
+            Text(title)
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            Text(description)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+                .lineSpacing(2)
         }
-        .font(.callout)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 32)
+        .padding(.top, 32)
+        .padding(.bottom, 8)
     }
 }
 
@@ -448,7 +521,7 @@ struct VisualEffectBackground: NSViewRepresentable {
         let view = DraggableVisualEffectView()
         view.blendingMode = .behindWindow
         view.state = .active
-        view.material = .underWindowBackground
+        view.material = .popover
         view.wantsLayer = true
         view.layer?.cornerRadius = 16
         view.layer?.masksToBounds = true

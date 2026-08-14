@@ -380,12 +380,18 @@ SWIFT_CLASS("_TtC7Akshara25DraggableVisualEffectView")
 - (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
 @end
 
+@class NSNotification;
 SWIFT_CLASS("_TtC7Akshara20WelcomeWindowManager")
-@interface WelcomeWindowManager : NSObject
+@interface WelcomeWindowManager : NSObject <NSWindowDelegate>
 SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) WelcomeWindowManager * _Nonnull shared;)
 + (WelcomeWindowManager * _Nonnull)shared SWIFT_WARN_UNUSED_RESULT;
+/// The onboarding window is useful once after installation; subsequent
+/// input-method launches should stay invisible and lightweight.
+- (void)showWelcomeWindowIfNeeded;
 - (void)showWelcomeWindow;
 - (void)closeWelcomeWindow;
+- (void)showPhoneticGuideWithSmartMode:(BOOL)isSmart;
+- (void)windowWillClose:(NSNotification * _Nonnull)notification;
 - (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 @end
 
