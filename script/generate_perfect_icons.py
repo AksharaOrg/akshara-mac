@@ -10,7 +10,7 @@ FONT_PATH = "/System/Library/Fonts/Supplemental/Sinhala Sangam MN.ttc"
 def render_native_badge(scale):
     """
     Renders an 8x supersampled, pixel-perfect macOS input source squircle badge.
-    Exact proportions matching Apple's native [A] ABC badge.
+    Exact proportions matching Apple's native [A] ABC badge with 'අක්' cutout.
     Downsampled with Lanczos filter for silky smooth subpixel anti-aliasing.
     """
     SS = 8
@@ -35,10 +35,10 @@ def render_native_badge(scale):
     # Draw solid black badge at 8x resolution with exact continuous curvature
     draw.rounded_rectangle([bx0, by0, bx1, by1], radius=radius, fill=(0, 0, 0, 255))
     
-    # Font size increased by exactly 1 point (10.8pt at 1x)
+    # Font size 10.8pt at 1x
     font_size = (10.8 * scale) * SS
     font = ImageFont.truetype(FONT_PATH, int(font_size), index=1) # Bold
-    bbox = draw.textbbox((0, 0), "අක", font=font)
+    bbox = draw.textbbox((0, 0), "අක්", font=font)
     gw = bbox[2] - bbox[0]
     gh = bbox[3] - bbox[1]
     
@@ -48,7 +48,7 @@ def render_native_badge(scale):
     # High-resolution cutout mask
     mask_hi = Image.new("L", (int(canvas_w), int(canvas_h)), 0)
     mask_draw = ImageDraw.Draw(mask_hi)
-    mask_draw.text((gx, gy), "අක", font=font, fill=255)
+    mask_draw.text((gx, gy), "අක්", font=font, fill=255)
     
     arr_hi = np.array(im_hi)
     m_arr_hi = np.array(mask_hi)
@@ -75,4 +75,4 @@ if __name__ == "__main__":
     
     export_tiff(im_16, im_32, "AksharaMenu")
     export_tiff(im_16, im_32, "AksharaMenuWhite")
-    print("Done generating smooth native squircle badge icons!")
+    print("Done generating smooth native squircle badge icons with 'අක්'!")
