@@ -35,6 +35,23 @@ killall TextInputMenuAgent
 Open System Settings, add an input source for Sinhala, and select one of the
 `Akshara` modes.
 
+## Uninstall
+
+Remove a user-level installation:
+
+```sh
+./script/uninstall.sh
+```
+
+For the system-wide installation created by the installer package, use:
+
+```sh
+./script/uninstall.sh --system
+```
+
+The script unregisters the input method and restarts the text-input services.
+Log out and back in if Akshara remains listed in Input Sources.
+
 ## Package
 
 Build a distributable installer package:
