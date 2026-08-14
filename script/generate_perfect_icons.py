@@ -9,7 +9,7 @@ FONT_PATH = "/System/Library/Fonts/Supplemental/Sinhala Sangam MN.ttc"
 def make_template_icon(text, size, font_size, y_offset=0):
     im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(im)
-    font = ImageFont.truetype(FONT_PATH, font_size, index=1) # Bold
+    font = ImageFont.truetype(FONT_PATH, int(font_size), index=1) # Bold
     bbox = draw.textbbox((0, 0), text, font=font)
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
@@ -29,9 +29,10 @@ def export_tiff(im_1x, im_2x, base_name):
     print(f"Exported {base_name}.tif (16x16) and {base_name}@2x.tif (32x32)")
 
 if __name__ == "__main__":
-    im_16 = make_template_icon("අ", 16, 15, y_offset=0)
-    im_32 = make_template_icon("අ", 32, 30, y_offset=-1)
+    # Generate bold 'අක' (Akshara emblem)
+    im_16 = make_template_icon("අක", 16, 11, y_offset=-0.5)
+    im_32 = make_template_icon("අක", 32, 22, y_offset=-1)
     
     export_tiff(im_16, im_32, "AksharaMenu")
     export_tiff(im_16, im_32, "AksharaMenuWhite")
-    print("Done generating optically centered 'අ' template menu icons!")
+    print("Done generating optically centered 'අක' template menu icons!")
