@@ -9,3 +9,7 @@ dist/
 .windsurf/
 
 thimira/Akshara-Swift.h
+
+
+.graphify_*
+graphify-out/
