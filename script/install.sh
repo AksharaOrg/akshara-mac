@@ -19,6 +19,11 @@ elif [[ ! -d "$SRC" ]]; then
 fi
 
 mkdir -p "$DST_DIR"
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$DST" >/dev/null 2>&1 || true
+if [[ -d "/Library/Input Methods/$APP_NAME" ]]; then
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "/Library/Input Methods/$APP_NAME" >/dev/null 2>&1 || true
+  sudo rm -rf "/Library/Input Methods/$APP_NAME" 2>/dev/null || true
+fi
 rm -rf "$DST"
 rm -rf "$LEGACY_DST"
 cp -R "$SRC" "$DST"
@@ -28,20 +33,19 @@ cp -R "$SRC" "$DST"
 /usr/bin/codesign --force --sign - "$DST" >/dev/null
 /usr/bin/xattr -r -d com.apple.provenance "$DST" 2>/dev/null || true
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DST" >/dev/null 2>&1 || true
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -gc >/dev/null 2>&1 || true
 /usr/bin/swift "$ROOT/script/enable_akshara.swift" "$DST"
+
+# Reload input method process and system text-input agents to pick up new icons immediately
 killall "$APP_PROCESS" 2>/dev/null || true
 killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
+killall TextInputMenuAgent 2>/dev/null || true
+killall TextInputSwitcher 2>/dev/null || true
+killall ControlCenter 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
-echo "Installed $DST"
-echo "Log out/in if it does not appear immediately in System Settings > Keyboard > Input Sources."
+sleep 0.5
+/usr/bin/open -n "$DST"
 
-/usr/bin/osascript -e '
-tell application "System Events"
-    activate
-    set dialogResult to display dialog "Akshara has been installed. Restarting now is recommended: without a restart, the input method may not appear or work correctly until you log out and back in." with title "Restart Recommended" buttons {"Restart Later", "Restart Now"} default button "Restart Now" cancel button "Restart Later" with icon caution
-    if button returned of dialogResult is "Restart Now" then
-        restart
-    end if
-end tell
-' || true
+echo "✓ Successfully installed and launched $DST"
+

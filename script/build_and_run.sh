@@ -17,6 +17,7 @@ mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES"
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
 swiftc \
+  -module-cache-path "$BUILD_DIR/module-cache" \
   -emit-object \
   -wmo \
   -module-name Akshara \
@@ -27,6 +28,7 @@ swiftc \
   "$ROOT/src/WelcomeView.swift" \
   "$ROOT/src/PhoneticGuideView.swift" \
   "$ROOT/src/WelcomeWindowManager.swift"
+
 
 
 
