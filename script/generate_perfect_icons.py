@@ -43,7 +43,7 @@ def render_native_badge(scale):
     gh = bbox[3] - bbox[1]
     
     gx = round((canvas_w - gw) / 2 - bbox[0])
-    gy = round((canvas_h - gh) / 2 - bbox[1] - (0.3 * scale * SS))
+    gy = round((canvas_h - gh) / 2 - bbox[1] + (0.7 * scale * SS))
     
     # High-resolution cutout mask
     mask_hi = Image.new("L", (int(canvas_w), int(canvas_h)), 0)
