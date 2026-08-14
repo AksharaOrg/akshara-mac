@@ -34,14 +34,17 @@ import SwiftUI
 
         let newWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 560),
-            styleMask: [.titled, .closable],
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
 
         newWindow.center()
         newWindow.title = "Welcome to Akshara"
-        newWindow.titleVisibility = .visible
+        newWindow.titleVisibility = .hidden
+        newWindow.titlebarAppearsTransparent = true
+        newWindow.isOpaque = false
+        newWindow.backgroundColor = .clear
         newWindow.isRestorable = false
         newWindow.standardWindowButton(.zoomButton)?.isHidden = true
         newWindow.contentViewController = hostingController

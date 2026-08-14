@@ -20,7 +20,7 @@ swiftc \
   -emit-object \
   -wmo \
   -module-name Akshara \
-  -emit-objc-header-path "$BUILD_DIR/Akshara-Swift.h" \
+  -emit-objc-header-path "$ROOT/src/Akshara-Swift.h" \
   -parse-as-library \
   -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
   -o "$BUILD_DIR/SwiftCode.o" \
