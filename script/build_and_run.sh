@@ -16,38 +16,19 @@ mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
-swiftc \
-  -emit-object \
-  -wmo \
-  -module-name Akshara \
-  -emit-objc-header-path "$BUILD_DIR/Akshara-Swift.h" \
-  -parse-as-library \
-  -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
-  -o "$BUILD_DIR/SwiftCode.o" \
-  "$ROOT/src/WelcomeView.swift" \
-  "$ROOT/src/WelcomeWindowManager.swift"
-
-
-
 clang \
   -fobjc-arc \
   -Wall -Wextra -Werror=return-type \
-  -I "$BUILD_DIR" \
   -framework Cocoa \
   -framework Carbon \
   -framework InputMethodKit \
   -framework UserNotifications \
-  -framework SwiftUI \
-  -L/usr/lib/swift \
-  -Xlinker -rpath -Xlinker /usr/lib/swift \
   -o "$BUILD_DIR/$APP_NAME" \
-  "$BUILD_DIR/SwiftCode.o" \
   "$ROOT/src/main.m" \
   "$ROOT/src/SinhalaInputController.m" \
   "$ROOT/src/SinhalaTransliterator.m" \
   "$ROOT/src/SmartPhoneticMaps.m" \
   "$ROOT/src/AutoUpdater.m"
-
 
 cp "$BUILD_DIR/$APP_NAME" "$MACOS/$APP_NAME"
 cp "$ROOT/support/Info.plist" "$CONTENTS/Info.plist"
