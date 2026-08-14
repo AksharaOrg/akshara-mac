@@ -36,11 +36,17 @@ cp -R "$SRC" "$DST"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -gc >/dev/null 2>&1 || true
 /usr/bin/swift "$ROOT/script/enable_akshara.swift" "$DST"
 
-# Reload input method process and system text-input agents to pick up new icons immediately
-killall "$APP_PROCESS" 2>/dev/null || true
-killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
-killall TextInputMenuAgent 2>/dev/null || true
-killall TextInputSwitcher 2>/dev/null || true
+# Force restart macOS text-input services and CursorUIViewService using launchctl
+UID_VAL=$(id -u)
+launchctl kickstart -k "gui/$UID_VAL/com.apple.TextInputUI.xpc.CursorUIViewService" >/dev/null 2>&1 || true
+launchctl kickstart -k "gui/$UID_VAL/com.apple.TextInputSwitcher" >/dev/null 2>&1 || true
+launchctl kickstart -k "gui/$UID_VAL/com.apple.TextInputMenuAgent" >/dev/null 2>&1 || true
+
+killall -9 "$APP_PROCESS" 2>/dev/null || true
+killall -9 "$LEGACY_APP_PROCESS" 2>/dev/null || true
+killall -9 CursorUIViewService 2>/dev/null || true
+killall -9 TextInputSwitcher 2>/dev/null || true
+killall -9 TextInputMenuAgent 2>/dev/null || true
 killall ControlCenter 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
