@@ -35,8 +35,8 @@ def render_native_badge(scale):
     # Draw solid black badge at 8x resolution with exact continuous curvature
     draw.rounded_rectangle([bx0, by0, bx1, by1], radius=radius, fill=(0, 0, 0, 255))
     
-    # Font size kept exact (9.8pt at 1x)
-    font_size = (9.8 * scale) * SS
+    # Font size increased by exactly 1 point (10.8pt at 1x)
+    font_size = (10.8 * scale) * SS
     font = ImageFont.truetype(FONT_PATH, int(font_size), index=1) # Bold
     bbox = draw.textbbox((0, 0), "අක", font=font)
     gw = bbox[2] - bbox[0]
