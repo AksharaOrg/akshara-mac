@@ -31,7 +31,6 @@ cp -R "$SRC" "$DST"
 /usr/bin/swift "$ROOT/script/enable_akshara.swift" "$DST"
 killall "$APP_PROCESS" 2>/dev/null || true
 killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
-killall TextInputMenuAgent 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
 echo "Installed $DST"

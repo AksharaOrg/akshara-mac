@@ -6,217 +6,146 @@ struct WelcomeView: View {
     var onDismiss: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Welcome to Akshara")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
+        VStack(spacing: 0) {
+            header
 
-                Text("සිංහල for macOS")
-                    .font(.system(size: 12))
+            Divider()
+
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Let’s set up Sinhala typing")
+                    .font(.headline)
+
+                Text("It only takes a moment. Choose the layout that feels most natural to you.")
+                    .font(.callout)
                     .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 32)
 
-            VStack(alignment: .leading, spacing: 14) {
-                // 1
-                StepRow(number: "1", title: "Open keyboard settings") {
-                    Button(action: openKeyboardSettings) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "gearshape")
-                            Text("Open Keyboard Settings")
-                        }
-                        .font(.system(size: 11, weight: .medium))
+                VStack(alignment: .leading, spacing: 12) {
+                    SetupStep(number: 1, text: "Open Keyboard settings.") {
+                        Button("Open Keyboard Settings", action: openKeyboardSettings)
+                            .controlSize(.small)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .padding(.top, 1)
+                    SetupStep(number: 2, text: "Choose Input Sources, then select Edit.")
+                    SetupStep(number: 3, text: "Select the Add (+) button below your input sources.")
+                    SetupStep(number: 4, text: "Search for Sinhala, then choose an Akshara layout.")
                 }
 
-                // 2
-                StepRow(number: "2", title: "Find \"Input Sources\" and click \"Edit\"")
-
-                // 3
-                StepRow(number: "3", title: "In the list of input sources, press the \"+\" button at the bottom")
-
-                // 4
-                StepRow(number: "4", title: "Search for Sinhala")
-
-                // 5
-                StepRow(number: "5", title: "There will be 3 available options, pick your preference:") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        OptionDetailRow(
-                            title: "Akshara - Phonetic",
-                            description: "Standard romanized Sinhala composition (e.g. 'amma' → 'අම්ම')."
+                GroupBox("Choose a typing style") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        LayoutChoice(
+                            title: "Akshara – Phonetic",
+                            description: "Type Sinhala with familiar Roman letters, such as amma → අම්ම."
                         )
-                        OptionDetailRow(
-                            title: "Akshara - Smart Phonetic",
-                            description: "Simplified phonetic typing with quick combinations (e.g. 'Aa' for 'ඈ', 'x' for 'ං')."
+                        LayoutChoice(
+                            title: "Akshara – Smart Phonetic",
+                            description: "A faster phonetic style with handy combinations, such as Aa for ඇ."
                         )
-                        OptionDetailRow(
-                            title: "Akshara - SLS1134",
-                            description: "Direct Wijesekara layout entry with automatic visual kombuva reordering."
+                        LayoutChoice(
+                            title: "Akshara – SLS1134",
+                            description: "The familiar Wijesekara layout, with visual kombuva reordering."
                         )
                     }
-                    .padding(8)
+                    .padding(.top, 3)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                    )
-                    .padding(.top, 1)
                 }
 
-                // 6
-                StepRow(number: "6", title: "Open the input source menu and switch")
+                SetupStep(number: 5, text: "Choose Akshara from the menu bar whenever you’re ready to type.")
             }
-            .padding(12)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(NSColor.windowBackgroundColor).opacity(0.5))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                    )
-            )
 
-            HStack(spacing: 2) {
+            Divider()
+
+            HStack {
+                Button(action: openGitHubRepo) {
+                    Label("GitHub", systemImage: "link")
+                }
+                .buttonStyle(.link)
+                .help("View Akshara on GitHub")
+
                 Spacer()
 
-                Button(action: openGitHubRepo) {
-                    GitHubIconView()
-                        .frame(width: 16, height: 16)
-                }
-                .buttonStyle(.bordered)
-                .clipShape(Circle())
-                .controlSize(.large)
-                .help("View on GitHub")
-
-                Button(action: {
+                Button("Start Typing") {
                     onDismiss?()
-                }) {
-                    HStack(spacing: 5) {
-                        Text("Get Started")
-                        Image(systemName: "arrow.right")
-                    }
-                    .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(width: 500)
+        .background(Color(NSColor.windowBackgroundColor))
+    }
 
-                Spacer()
+    private var header: some View {
+        HStack(spacing: 14) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 56, height: 56)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Welcome to Akshara")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("A thoughtful Sinhala typing experience for your Mac")
+                    .foregroundColor(.secondary)
             }
 
+            Spacer()
         }
-        .padding(12)
-        .frame(width: 400)
-        .background(VisualEffectBackground())
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .edgesIgnoringSafeArea(.all)
+        .padding(20)
     }
 
     private func openKeyboardSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.PreferenceKey.Keyboard") {
-            NSWorkspace.shared.open(url)
-        }
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.PreferenceKey.Keyboard") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private func openGitHubRepo() {
-        if let url = URL(string: "https://github.com/AksharaOrg/akshara-mac") {
-            NSWorkspace.shared.open(url)
-        }
+        guard let url = URL(string: "https://github.com/AksharaOrg/akshara-mac") else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 
-struct StepRow<Content: View>: View {
-    let number: String
-    let title: String
+@available(macOS 11.0, *)
+private struct SetupStep<Content: View>: View {
+    let number: Int
+    let text: String
     let content: Content
 
-    init(number: String, title: String, @ViewBuilder content: () -> Content = { EmptyView() }) {
+    init(number: Int, text: String, @ViewBuilder content: () -> Content = { EmptyView() }) {
         self.number = number
-        self.title = title
+        self.text = text
         self.content = content()
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(Color.primary.opacity(0.1))
-                    .frame(width: 20, height: 20)
-                Text(number)
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-
+        HStack(alignment: .firstTextBaseline, spacing: 9) {
+            Text("\(number).")
+                .foregroundColor(.secondary)
+                .frame(width: 16, alignment: .trailing)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(text)
                 content
             }
-            Spacer()
         }
+        .font(.callout)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-struct OptionDetailRow: View {
+@available(macOS 11.0, *)
+private struct LayoutChoice: View {
     let title: String
     let description: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.primary)
+                .font(.callout.weight(.medium))
             Text(description)
-                .font(.system(size: 10))
+                .font(.caption)
                 .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
-}
-
-struct GitHubIconView: View {
-    var body: some View {
-        if let path = Bundle.main.path(forResource: "github", ofType: "svg"),
-           let img = NSImage(contentsOfFile: path) {
-            Image(nsImage: img)
-                .resizable()
-                .renderingMode(.template)
-                .aspectRatio(contentMode: .fit)
-        } else {
-            Image(systemName: "globe")
-        }
-    }
-}
-
-class DraggableVisualEffectView: NSVisualEffectView {
-    override var mouseDownCanMoveWindow: Bool {
-        return true
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        window?.performDrag(with: event)
-    }
-}
-
-struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = DraggableVisualEffectView()
-        view.blendingMode = .behindWindow
-        view.state = .active
-        view.material = .hudWindow
-        view.wantsLayer = true
-        view.layer?.cornerRadius = 16
-        view.layer?.masksToBounds = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }

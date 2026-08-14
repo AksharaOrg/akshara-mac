@@ -25,6 +25,7 @@ swiftc \
   -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
   -o "$BUILD_DIR/SwiftCode.o" \
   "$ROOT/src/WelcomeView.swift" \
+  "$ROOT/src/PhoneticGuideView.swift" \
   "$ROOT/src/WelcomeWindowManager.swift"
 
 

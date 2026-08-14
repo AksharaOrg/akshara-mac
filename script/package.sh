@@ -57,16 +57,19 @@ if [ -d "$APP" ]; then
 fi
 
 /usr/bin/killall Akshara >/dev/null 2>&1 || true
-/usr/bin/killall TextInputMenuAgent >/dev/null 2>&1 || true
 /usr/bin/killall cfprefsd >/dev/null 2>&1 || true
+
+# Show the setup guide to the logged-in user after a new installation. The
+# app's persisted completion flag prevents it from returning on later updates.
+CONSOLE_USER="$(/usr/bin/stat -f%Su /dev/console)"
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
+  CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
+  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open -n "$APP" >/dev/null 2>&1 || true
+fi
 
 exit 0
 SCRIPT
 chmod +x "$PKG_SCRIPTS/postinstall"
-
-/usr/bin/sips -s format png -z 160 160 "$ROOT/support/Resources/AksharaIconMaster.png" --out "$PKG_RESOURCES/installer-logo.png" >/dev/null
-/usr/bin/sips -s format png -z 420 420 "$ROOT/support/Resources/AksharaIconMaster.png" --out "$PKG_RESOURCES/installer-background.png" >/dev/null
-INSTALLER_LOGO_DATA="$(/usr/bin/base64 < "$PKG_RESOURCES/installer-logo.png" | /usr/bin/tr -d '\n')"
 
 cat >"$PKG_RESOURCES/welcome.html" <<HTML
 <!doctype html>
@@ -79,10 +82,6 @@ cat >"$PKG_RESOURCES/welcome.html" <<HTML
         line-height: 1.45;
         color: #1d1d1f;
       }
-      img {
-        width: 96px;
-        height: 96px;
-      }
       h1 {
         font-size: 22px;
         margin: 12px 0 8px;
@@ -94,7 +93,6 @@ cat >"$PKG_RESOURCES/welcome.html" <<HTML
     </style>
   </head>
   <body>
-    <img src="data:image/png;base64,$INSTALLER_LOGO_DATA" alt="Akshara">
     <h1>Install Akshara</h1>
     <p>Akshara adds Sinhala input methods for macOS, including Wijesekara/SLS1134 and phonetic typing.</p>
     <p>After installation, add Akshara from System Settings &gt; Keyboard &gt; Input Sources.</p>
@@ -123,7 +121,6 @@ cat >"$PKG_DISTRIBUTION" <<XML
 <installer-gui-script minSpecVersion="1">
   <title>Akshara</title>
   <welcome file="welcome.html"/>
-  <background file="installer-background.png" mime-type="image/png" scaling="proportional"/>
   <options customize="never" require-scripts="true"/>
   <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
   <choices-outline>

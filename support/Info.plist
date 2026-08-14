@@ -19,9 +19,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.7</string>
+	<string>0.1.11</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>11</string>
 	<key>ComponentInputModeDict</key>
 	<dict>
 		<key>tsInputModeListKey</key>
@@ -30,6 +30,8 @@
 			<dict>
 				<key>TISInputSourceID</key>
 				<string>com.local.inputmethod.Akshara.Phonetic</string>
+				<key>TISIconIsTemplate</key>
+				<true/>
 				<key>TISIntendedLanguage</key>
 				<string>si</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
@@ -51,6 +53,8 @@
 			<dict>
 				<key>TISInputSourceID</key>
 				<string>com.local.inputmethod.Akshara.SLS1134</string>
+				<key>TISIconIsTemplate</key>
+				<true/>
 				<key>TISIntendedLanguage</key>
 				<string>si</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
@@ -72,6 +76,8 @@
 			<dict>
 				<key>TISInputSourceID</key>
 				<string>com.local.inputmethod.Akshara.SmartPhonetic</string>
+				<key>TISIconIsTemplate</key>
+				<true/>
 				<key>TISIntendedLanguage</key>
 				<string>si</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
@@ -99,10 +105,14 @@
 	</dict>
 	<key>InputMethodConnectionName</key>
 	<string>Akshara_Connection</string>
+	<key>TISIconIsTemplate</key>
+	<true/>
 	<key>InputMethodServerControllerClass</key>
 	<string>SinhalaInputController</string>
-	<key>LSBackgroundOnly</key>
-	<string>1</string>
+	<!-- An input method should stay out of the Dock, but help and setup windows
+	     still need to be activatable. LSBackgroundOnly forbids creating windows. -->
+	<key>LSUIElement</key>
+	<true/>
 	<key>LSMinimumSystemVersion</key>
 	<string>12.0</string>
 	<key>NSHumanReadableCopyright</key>
@@ -115,6 +125,8 @@
 	</array>
 	<key>tsInputMethodIconFileKey</key>
 	<string>AksharaMenu.tif</string>
+	<key>tsInputMethodAlternateIconFileKey</key>
+	<string>AksharaMenuWhite.tif</string>
 	<key>tsInputMethodLocalizedNameKey</key>
 	<string>Akshara</string>
 </dict>

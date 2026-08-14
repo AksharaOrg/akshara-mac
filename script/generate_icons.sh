@@ -4,11 +4,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RESOURCES="$ROOT/support/Resources"
 GLYPH="$RESOURCES/AksharaGlyph.png"
+MENU_FONT="/System/Library/Fonts/Supplemental/Sinhala Sangam MN.ttc"
 WORK="$ROOT/build/icon-generation"
 ICONSET="$WORK/Akshara.iconset"
 
 if [[ ! -f "$GLYPH" ]]; then
   echo "Missing icon glyph: $GLYPH" >&2
+  exit 1
+fi
+
+if [[ ! -f "$MENU_FONT" ]]; then
+  echo "Missing Sinhala menu-icon font: $MENU_FONT" >&2
   exit 1
 fi
 
@@ -39,23 +45,46 @@ for size in 16 32 128 256 512; do
 done
 /usr/bin/iconutil -c icns "$ICONSET" -o "$RESOURCES/Akshara.icns"
 
-magick "$GLYPH" -trim +repage -resize '31x31>' \
-  -gravity center -background none -extent 32x32 \
-  -channel A -morphology Dilate Diamond:1 +channel \
+# The illustrated Akshara logo is detailed enough to disappear at 16pt. The
+# menu bar instead uses the compact Sinhala අක mark, with a separate white
+# asset for light icons on dark menu-bar styles. A subtle dilation gives the
+# small glyph the weight of a bold menu-bar icon without blurring it.
+magick -size 512x512 xc:none \
+  -font "$MENU_FONT" -gravity center -pointsize 310 -fill black \
+  -annotate +0+16 'අක' \
+  -trim +repage -morphology Dilate Disk:5 -trim +repage -resize '32x30>' \
   -depth 8 -define png:color-type=6 \
   "$WORK/AksharaMenuBlack.png"
 magick "$WORK/AksharaMenuBlack.png" \
-  -channel RGB -fill white -colorize 100 \
+  -fill white -colorize 100 \
   -depth 8 -define png:color-type=6 \
   "$WORK/AksharaMenuWhite.png"
 
-/usr/bin/sips -s format tiff -z 16 16 "$WORK/AksharaMenuBlack.png" \
-  --out "$RESOURCES/AksharaMenu.tif" >/dev/null
-/usr/bin/sips -s format tiff "$WORK/AksharaMenuBlack.png" \
-  --out "$RESOURCES/AksharaMenu@2x.tif" >/dev/null
-/usr/bin/sips -s format tiff -z 16 16 "$WORK/AksharaMenuWhite.png" \
-  --out "$RESOURCES/AksharaMenuWhite.tif" >/dev/null
-/usr/bin/sips -s format tiff "$WORK/AksharaMenuWhite.png" \
-  --out "$RESOURCES/AksharaMenuWhite@2x.tif" >/dev/null
+ # Give the optical glyph a one-pixel (at @2x) lower baseline in its compact
+ # canvas. This corrects Sinhala's high apparent centre without reintroducing
+ # the old square padding.
+magick -size 32x20 xc:none \
+  \( "$WORK/AksharaMenuBlack.png" \) -geometry +0+2 -composite \
+  "$WORK/AksharaMenuBlackCanvas.png"
+magick -size 32x20 xc:none \
+  \( "$WORK/AksharaMenuWhite.png" \) -geometry +0+2 -composite \
+  "$WORK/AksharaMenuWhiteCanvas.png"
+
+magick "$WORK/AksharaMenuBlackCanvas.png" -resize 16x10 \
+  -colorspace sRGB -type TrueColorAlpha \
+  -define tiff:photometric=RGB -define tiff:alpha=unassociated \
+  -depth 8 "$RESOURCES/AksharaMenu.tif"
+magick "$WORK/AksharaMenuBlackCanvas.png" \
+  -colorspace sRGB -type TrueColorAlpha \
+  -define tiff:photometric=RGB -define tiff:alpha=unassociated \
+  -depth 8 "$RESOURCES/AksharaMenu@2x.tif"
+magick "$WORK/AksharaMenuWhiteCanvas.png" -resize 16x10 \
+  -colorspace sRGB -type TrueColorAlpha \
+  -define tiff:photometric=RGB -define tiff:alpha=unassociated \
+  -depth 8 "$RESOURCES/AksharaMenuWhite.tif"
+magick "$WORK/AksharaMenuWhiteCanvas.png" \
+  -colorspace sRGB -type TrueColorAlpha \
+  -define tiff:photometric=RGB -define tiff:alpha=unassociated \
+  -depth 8 "$RESOURCES/AksharaMenuWhite@2x.tif"
 
 echo "Generated Akshara app and menu icons"

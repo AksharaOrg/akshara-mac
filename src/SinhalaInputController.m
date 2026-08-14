@@ -616,13 +616,30 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 - (NSMenu *)menu {
   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Akshara Menu"];
 
+  AksharaInputMode mode = [self currentInputMode];
+
+  NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Wijesekara Keyboard..."
+                                                         action:@selector(showWijesekaraKeyboard:)
+                                                  keyEquivalent:@""];
+  keyboardItem.target = self;
+  [menu addItem:keyboardItem];
+
+  if (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic) {
+    NSString *guideTitle = mode == AksharaInputModeSmartPhonetic
+        ? @"Smart Phonetic Typing Guide..."
+        : @"Phonetic Typing Guide...";
+    NSMenuItem *guideItem = [[NSMenuItem alloc] initWithTitle:guideTitle
+                                                        action:@selector(showPhoneticTypingGuide:)
+                                                 keyEquivalent:@""];
+    guideItem.target = self;
+    [menu addItem:guideItem];
+  }
+
   NSMenuItem *welcomeItem = [[NSMenuItem alloc] initWithTitle:@"Welcome & Setup Guide..."
                                                        action:@selector(showWelcomeWindow:)
                                                 keyEquivalent:@""];
   welcomeItem.target = self;
   [menu addItem:welcomeItem];
-
-  [menu addItem:[NSMenuItem separatorItem]];
 
   AutoUpdater *updater = [AutoUpdater sharedUpdater];
   BOOL updateAvailable = [updater isUpdateAvailable];
@@ -634,22 +651,34 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
                                                keyEquivalent:@""];
   updateItem.target = self;
   [menu addItem:updateItem];
-  [menu addItem:[NSMenuItem separatorItem]];
-  NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Show Wijesekara Keyboard"
-                                                         action:@selector(showWijesekaraKeyboard:)
-                                                  keyEquivalent:@""];
-  keyboardItem.target = self;
-  [menu addItem:keyboardItem];
   return menu;
 }
 
 - (void)showWelcomeWindow:(id)sender {
   (void)sender;
-  [WelcomeWindowManager.shared showWelcomeWindow];
+  // IMK may invoke menu actions on its connection thread. AppKit window work
+  // must run on the main thread or macOS can silently drop the presentation.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [WelcomeWindowManager.shared showWelcomeWindow];
+  });
+}
+
+- (void)showPhoneticTypingGuide:(id)sender {
+  (void)sender;
+  BOOL smartMode = [self currentInputMode] == AksharaInputModeSmartPhonetic;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [WelcomeWindowManager.shared showPhoneticGuideWithSmartMode:smartMode];
+  });
 }
 
 - (void)showWijesekaraKeyboard:(id)sender {
   (void)sender;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self presentWijesekaraKeyboard];
+  });
+}
+
+- (void)presentWijesekaraKeyboard {
   if (!self.keyboardLayoutPanel) {
     NSRect frame = NSMakeRect(0, 0, 850, 350);
     self.keyboardLayoutPanel = [[NSPanel alloc] initWithContentRect:frame
