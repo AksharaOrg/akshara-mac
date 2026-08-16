@@ -458,20 +458,13 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     if (self.rawBuffer.length == 0) {
       return NO;
     }
-    
-    NSString *currentComposed = self.lastCommittedString ?: @"";
-    NSUInteger targetGraphemes = [self graphemeCountForString:currentComposed];
-    if (targetGraphemes > 0) {
-      targetGraphemes -= 1;
-    }
-    
-    while (self.rawBuffer.length > 0) {
-      [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
-      NSString *newComposed = [self markedString];
-      if ([self graphemeCountForString:newComposed] <= targetGraphemes) {
-        break;
-      }
-    }
+
+    // The buffer preserves Wijesekara's visual input order.  A rendered
+    // Sinhala grapheme can therefore be composed from several buffer units
+    // (for example, "ෙකා" renders as "කො").  Backspace must remove just the
+    // most recent input unit; trying to infer how many units to remove from
+    // rendered grapheme counts can consume the preceding vowel sequence too.
+    [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
     
     BOOL shouldReturnNo = (self.rawBuffer.length == 0);
     [self updateCustomComposition];
