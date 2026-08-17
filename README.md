@@ -101,6 +101,14 @@ The workflow signs the app and installer, notarizes and staples the package,
 then publishes it as a GitHub Release asset. Keep the GitHub environment
 restricted to trusted release approvers; never commit any of these values.
 
+## Contributors
+
+Many thanks to all the [Akshara contributors](https://github.com/sdglhm/akshara/graphs/contributors)! 🚀
+
+<a href="https://github.com/sdglhm/akshara/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sdglhm/akshara" />
+</a>
+
 ## License
 
 Akshara is released under the [MIT License](https://opensource.org/license/mit).

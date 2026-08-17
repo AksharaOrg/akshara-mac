@@ -52,6 +52,21 @@ static BOOL expectSLSProgression(NSString *input, NSArray<NSString *> *expected)
   return ok;
 }
 
+static BOOL expectSLSBackspace(NSString *input, NSString *expected) {
+  if (input.length == 0) {
+    fprintf(stderr, "FAIL SLS backspace fixture must not be empty\n");
+    return NO;
+  }
+  NSString *remaining = [input substringToIndex:input.length - 1];
+  NSString *actual = [SinhalaTransliterator markedSLSInputOrder:remaining];
+  if (![actual isEqualToString:expected]) {
+    fprintf(stderr, "FAIL SLS backspace %s: expected %s, got %s\n",
+            input.UTF8String, expected.UTF8String, actual.UTF8String);
+    return NO;
+  }
+  return YES;
+}
+
 static BOOL expectPhoneticProgression(NSString *input, NSArray<NSString *> *expected) {
   if (input.length != expected.count) {
     fprintf(stderr, "FAIL phonetic progression fixture length for %s\n", input.UTF8String);
@@ -161,6 +176,7 @@ int main(void) {
     ok = expectSLSProgression(@"අැ", (@[@"අ", @"ඇ"])) && ok;
     ok = expectSLSProgression(@"අා", (@[@"අ", @"ආ"])) && ok;
     ok = expectSLSProgression(@"ෙකා්", (@[@"", @"කෙ", @"කො", @"කෝ"])) && ok;
+    ok = expectSLSBackspace(@"ෙකාර", @"කො") && ok;
     ok = expectSLSProgression(@"ක", (@[@"ක", @"ක්‍ර"])) && ok;
     ok = expectSLSProgression(@"ක", (@[@"ක", @"ක්‍ය"])) && ok;
     ok = expectSLSProgression(@"ක", (@[@"ක", @"ර්‍ක"])) && ok;

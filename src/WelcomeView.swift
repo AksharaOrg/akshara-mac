@@ -108,9 +108,14 @@ struct WelcomeView: View {
             }
         }
         .frame(width: 500, height: 500)
-        .background(VisualEffectBackground())
+        .background(windowBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .edgesIgnoringSafeArea(.all)
+    }
+
+    @ViewBuilder
+    private var windowBackground: some View {
+        VisualEffectBackground()
     }
 
     private var introView: some View {
@@ -530,6 +535,9 @@ struct VisualEffectBackground: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
+
+
+
 
 @available(macOS 11.0, *)
 struct WelcomeView_Previews: PreviewProvider {
