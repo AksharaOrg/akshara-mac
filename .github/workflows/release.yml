@@ -24,15 +24,18 @@ jobs:
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
         run: |
           set -euo pipefail
+          decode_base64() {
+            python3 -c 'import base64, pathlib, sys; pathlib.Path(sys.argv[2]).write_bytes(base64.b64decode(sys.argv[1]))' "$1" "$2"
+          }
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
           security create-keychain -p "$CERTIFICATE_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$CERTIFICATE_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
-          printf '%s' "$APP_CERTIFICATE_BASE64" | base64 -D > "$RUNNER_TEMP/app-signing.p12"
-          printf '%s' "$INSTALLER_CERTIFICATE_BASE64" | base64 -D > "$RUNNER_TEMP/installer-signing.p12"
-          security import "$RUNNER_TEMP/app-signing.p12" -k "$KEYCHAIN_PATH" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
-          security import "$RUNNER_TEMP/installer-signing.p12" -k "$KEYCHAIN_PATH" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+          decode_base64 "$APP_CERTIFICATE_BASE64" "$RUNNER_TEMP/app-signing.p12"
+          decode_base64 "$INSTALLER_CERTIFICATE_BASE64" "$RUNNER_TEMP/installer-signing.p12"
+          security import "$RUNNER_TEMP/app-signing.p12" -f pkcs12 -k "$KEYCHAIN_PATH" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+          security import "$RUNNER_TEMP/installer-signing.p12" -f pkcs12 -k "$KEYCHAIN_PATH" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CERTIFICATE_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Notarize and package
@@ -45,7 +48,7 @@ jobs:
           AKSHARA_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
         run: |
           set -euo pipefail
-          printf '%s' "$APPLE_API_KEY_BASE64" | base64 -D > "$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
+          python3 -c 'import base64, pathlib, sys; pathlib.Path(sys.argv[2]).write_bytes(base64.b64decode(sys.argv[1]))' "$APPLE_API_KEY_BASE64" "$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
           export AKSHARA_NOTARY_KEY="$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
           ./script/package.sh
           spctl --assess --type install --verbose=4 "dist/Akshara-${GITHUB_REF_NAME}.pkg"
