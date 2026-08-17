@@ -11,7 +11,7 @@ permissions:
 jobs:
   release:
     name: Sign, notarize, and publish
-    runs-on: macos-14
+    runs-on: macos-latest
     environment: release
     steps:
       - name: Check out the release tag
