@@ -115,15 +115,7 @@ struct WelcomeView: View {
 
     @ViewBuilder
     private var windowBackground: some View {
-#if compiler(>=6.4)
-        if #available(macOS 26.0, *) {
-            GlassEffectBackground()
-        } else {
-            VisualEffectBackground()
-        }
-#else
         VisualEffectBackground()
-#endif
     }
 
     private var introView: some View {
@@ -544,31 +536,7 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
-#if compiler(>=6.4)
-@available(macOS 26.0, *)
-class DraggableGlassEffectView: NSGlassEffectView {
-    override var mouseDownCanMoveWindow: Bool {
-        return true
-    }
 
-    override func mouseDown(with event: NSEvent) {
-        window?.performDrag(with: event)
-    }
-}
-
-@available(macOS 26.0, *)
-struct GlassEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSGlassEffectView {
-        let view = DraggableGlassEffectView()
-        view.wantsLayer = true
-        view.layer?.cornerRadius = 16
-        view.layer?.masksToBounds = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSGlassEffectView, context: Context) {}
-}
-#endif
 
 
 @available(macOS 11.0, *)
