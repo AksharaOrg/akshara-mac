@@ -33,13 +33,12 @@ import SwiftUI
         let hostingController = NSHostingController(rootView: welcomeView)
 
         let newWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 500),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
 
-        newWindow.center()
         newWindow.title = "Welcome to Akshara"
         newWindow.titleVisibility = .hidden
         newWindow.titlebarAppearsTransparent = true
@@ -49,8 +48,19 @@ import SwiftUI
         newWindow.standardWindowButton(.zoomButton)?.isHidden = true
         newWindow.contentViewController = hostingController
         newWindow.delegate = self
-
+        newWindow.level = .floating
+        
         self.window = newWindow
+        
+        // Exact mathematical centering using known 500x500 size
+        if let screen = NSScreen.main {
+            let screenRect = screen.visibleFrame
+            let x = screenRect.origin.x + (screenRect.width - 500) / 2
+            let y = screenRect.origin.y + (screenRect.height - 500) / 2
+            newWindow.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            newWindow.center()
+        }
 
         newWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
