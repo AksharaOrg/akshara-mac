@@ -108,9 +108,18 @@ struct WelcomeView: View {
             }
         }
         .frame(width: 500, height: 500)
-        .background(VisualEffectBackground())
+        .background(windowBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .edgesIgnoringSafeArea(.all)
+    }
+
+    @ViewBuilder
+    private var windowBackground: some View {
+        if #available(macOS 26.0, *) {
+            GlassEffectBackground()
+        } else {
+            VisualEffectBackground()
+        }
     }
 
     private var introView: some View {
@@ -530,6 +539,31 @@ struct VisualEffectBackground: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
+
+@available(macOS 26.0, *)
+class DraggableGlassEffectView: NSGlassEffectView {
+    override var mouseDownCanMoveWindow: Bool {
+        return true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+}
+
+@available(macOS 26.0, *)
+struct GlassEffectBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSGlassEffectView {
+        let view = DraggableGlassEffectView()
+        view.wantsLayer = true
+        view.layer?.cornerRadius = 16
+        view.layer?.masksToBounds = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSGlassEffectView, context: Context) {}
+}
+
 
 @available(macOS 11.0, *)
 struct WelcomeView_Previews: PreviewProvider {

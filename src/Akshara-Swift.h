@@ -372,6 +372,14 @@ extern "C" {
 
 @class NSEvent;
 @class NSCoder;
+SWIFT_CLASS("_TtC7Akshara24DraggableGlassEffectView") SWIFT_AVAILABILITY(macos,introduced=26.0)
+@interface DraggableGlassEffectView : NSGlassEffectView
+@property (nonatomic, readonly) BOOL mouseDownCanMoveWindow;
+- (void)mouseDown:(NSEvent * _Nonnull)event;
+- (nonnull instancetype)initWithFrame:(NSRect)frameRect OBJC_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
+@end
+
 SWIFT_CLASS("_TtC7Akshara25DraggableVisualEffectView")
 @interface DraggableVisualEffectView : NSVisualEffectView
 @property (nonatomic, readonly) BOOL mouseDownCanMoveWindow;
