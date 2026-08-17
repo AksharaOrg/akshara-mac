@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           decode_base64() {
-            python3 -c 'import base64, pathlib, sys; pathlib.Path(sys.argv[2]).write_bytes(base64.b64decode(sys.argv[1]))' "$1" "$2"
+            python3 -c 'import base64, pathlib, sys; raw = "".join(sys.argv[1].replace("\\n", "\n").split()); pathlib.Path(sys.argv[2]).write_bytes(base64.b64decode(raw, validate=True))' "$1" "$2"
           }
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
           security create-keychain -p "$CERTIFICATE_PASSWORD" "$KEYCHAIN_PATH"
