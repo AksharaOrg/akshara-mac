@@ -323,6 +323,14 @@ struct WelcomeView: View {
                 .buttonStyle(.link)
                 .help("View Akshara on GitHub")
 
+                Button(action: {
+                    AutoUpdater.shared().checkForUpdatesManually()
+                }) {
+                    Label("Check Updates", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.link)
+                .help("Check for the latest version of Akshara")
+
                 Spacer()
                 
                 if viewModel.instructionStep > 0 {
@@ -395,6 +403,17 @@ struct WelcomeView: View {
             
             VStack(spacing: 16) {
                 Button(action: {
+                    AutoUpdater.shared().checkForUpdatesManually()
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                        Text("Check for Updates")
+                    }
+                }
+                .controlSize(.large)
+                .padding(.top, 24)
+
+                Button(action: {
                     onDismiss?()
                 }) {
                     HStack(spacing: 5) {
@@ -404,7 +423,6 @@ struct WelcomeView: View {
                 }
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
-                .padding(.top, 24)
             }
         }
         .padding(32)
