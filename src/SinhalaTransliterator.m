@@ -15,6 +15,8 @@ static NSString * const SLSTokenYansaya = @"\uE005";
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
     map = @{
+      @"nng": @"ඟ", @"nnj": @"ඦ", @"nnd": @"ඬ", @"nndh": @"ඳ", @"nnq": @"ඳ",
+      @"nnk": @"ඤ", @"nnh": @"ඥ", @"B": @"ඹ",
       @"ng": @"ඞ", @"gn": @"ඥ", @"ny": @"ඤ",
       @"kh": @"ඛ", @"gh": @"ඝ", @"ch": @"ච", @"jh": @"ඣ",
       @"Th": @"ඨ", @"Dh": @"ඪ", @"th": @"ත", @"dh": @"ද",
@@ -123,8 +125,8 @@ static NSString * const SLSTokenYansaya = @"\uE005";
 }
 
 + (NSArray<NSString *> *)consonantKeys {
-  return @[@"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
-           @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"k", @"g", @"c", @"j",
+  return @[@"nndh", @"nng", @"nnj", @"nnd", @"nnq", @"nnk", @"nnh", @"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
+           @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"B", @"k", @"g", @"c", @"j",
            @"C", @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
            @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
 }
