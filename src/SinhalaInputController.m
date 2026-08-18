@@ -170,6 +170,7 @@
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
 @property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
 @property(nonatomic, assign) NSRange lastReportedRange;
+@property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
@@ -187,6 +188,9 @@
     _lastReportedRange = NSMakeRange(NSNotFound, 0);
     [[AutoUpdater sharedUpdater] startCheckingForUpdates];
     [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
+    
+    // Initialize the Caps Lock HUD monitor
+    [AksharaCapsLockHUD shared];
   }
   return self;
 }
@@ -252,6 +256,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [invocation setTarget:sender];
     [invocation setArgument:&string atIndex:2];
     [invocation setArgument:&range atIndex:3];
+    [invocation retainArguments]; // Fixes ARC deallocation crash
     [invocation invoke];
   }
 }

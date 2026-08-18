@@ -370,12 +370,36 @@ extern "C" {
 
 #if defined(__OBJC__)
 
+SWIFT_CLASS_NAMED("CapsLockHUD")
+@interface AksharaCapsLockHUD : NSObject
+SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) AksharaCapsLockHUD * _Nonnull shared;)
++ (AksharaCapsLockHUD * _Nonnull)shared SWIFT_WARN_UNUSED_RESULT;
+- (nonnull instancetype)init SWIFT_UNAVAILABLE;
++ (nonnull instancetype)new SWIFT_UNAVAILABLE_MSG("-init is unavailable");
+- (void)showWithCapsLockOn:(BOOL)capsLockOn;
+@end
+
 @class NSEvent;
 @class NSCoder;
+SWIFT_CLASS("_TtC7Akshara24DraggableGlassEffectView") SWIFT_AVAILABILITY(macos,introduced=26.0)
+@interface DraggableGlassEffectView : NSGlassEffectView
+@property (nonatomic, readonly) BOOL mouseDownCanMoveWindow;
+- (void)mouseDown:(NSEvent * _Nonnull)event;
+- (nonnull instancetype)initWithFrame:(NSRect)frameRect OBJC_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
+@end
+
 SWIFT_CLASS("_TtC7Akshara25DraggableVisualEffectView")
 @interface DraggableVisualEffectView : NSVisualEffectView
 @property (nonatomic, readonly) BOOL mouseDownCanMoveWindow;
 - (void)mouseDown:(NSEvent * _Nonnull)event;
+- (nonnull instancetype)initWithFrame:(NSRect)frameRect OBJC_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
+@end
+
+SWIFT_CLASS("_TtC7Akshara7HUDView")
+@interface HUDView : NSView
+- (void)drawRect:(NSRect)dirtyRect;
 - (nonnull instancetype)initWithFrame:(NSRect)frameRect OBJC_DESIGNATED_INITIALIZER;
 - (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
 @end
