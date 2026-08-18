@@ -36,7 +36,12 @@ killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
 killall "System Settings" 2>/dev/null || true
-killall TextInputMenuAgent 2>/dev/null || true
+
+USER_ID=$(id -u)
+launchctl kickstart -k "gui/$USER_ID/com.apple.TextInputMenuAgent" 2>/dev/null || true
+launchctl kickstart -k "gui/$USER_ID/com.apple.TextInputUI.xpc.CursorUIViewService" 2>/dev/null || true
+launchctl kickstart -k "gui/$USER_ID/com.apple.TextInputSwitcher" 2>/dev/null || true
+
 killall SystemUIServer 2>/dev/null || true
 rm -rf ~/Library/Caches/com.apple.IntlDataCache* 2>/dev/null || true
 
