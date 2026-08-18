@@ -170,7 +170,6 @@
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
 @property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
 @property(nonatomic, assign) NSRange lastReportedRange;
-@property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
@@ -188,9 +187,6 @@
     _lastReportedRange = NSMakeRange(NSNotFound, 0);
     [[AutoUpdater sharedUpdater] startCheckingForUpdates];
     [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
-    
-    // Initialize the Caps Lock HUD monitor
-    [AksharaCapsLockHUD shared];
   }
   return self;
 }
@@ -256,7 +252,6 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [invocation setTarget:sender];
     [invocation setArgument:&string atIndex:2];
     [invocation setArgument:&range atIndex:3];
-    [invocation retainArguments]; // Fixes ARC deallocation crash
     [invocation invoke];
   }
 }
@@ -463,13 +458,20 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     if (self.rawBuffer.length == 0) {
       return NO;
     }
-
-    // The buffer preserves Wijesekara's visual input order.  A rendered
-    // Sinhala grapheme can therefore be composed from several buffer units
-    // (for example, "ෙකා" renders as "කො").  Backspace must remove just the
-    // most recent input unit; trying to infer how many units to remove from
-    // rendered grapheme counts can consume the preceding vowel sequence too.
-    [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
+    
+    NSString *currentComposed = self.lastCommittedString ?: @"";
+    NSUInteger targetGraphemes = [self graphemeCountForString:currentComposed];
+    if (targetGraphemes > 0) {
+      targetGraphemes -= 1;
+    }
+    
+    while (self.rawBuffer.length > 0) {
+      [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
+      NSString *newComposed = [self markedString];
+      if ([self graphemeCountForString:newComposed] <= targetGraphemes) {
+        break;
+      }
+    }
     
     BOOL shouldReturnNo = (self.rawBuffer.length == 0);
     [self updateCustomComposition];
