@@ -57,7 +57,8 @@
 - (void)checkForUpdatesWithManualFlag:(BOOL)isManual {
     
     NSURL *url = [NSURL URLWithString:@"https://api.github.com/repos/AksharaOrg/akshara-mac/releases/latest"];
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
@@ -117,7 +118,13 @@
                     }
                 });
             } else if (isManual) {
-                [self showManualCheckError];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSAlert *alert = [[NSAlert alloc] init];
+                    alert.messageText = @"Update Available";
+                    alert.informativeText = [NSString stringWithFormat:@"Version %@ is released but the installer package is not available yet. Please try again later.", tagName];
+                    [alert addButtonWithTitle:@"OK"];
+                    [alert runModal];
+                });
             }
         } else if (isManual) {
             [self showUpToDateNotification];

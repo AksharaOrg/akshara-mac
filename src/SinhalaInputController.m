@@ -637,16 +637,24 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
   AksharaInputMode mode = [self currentInputMode];
 
-  NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Wijesekara Keyboard..."
-                                                         action:@selector(showWijesekaraKeyboard:)
-                                                  keyEquivalent:@""];
-  keyboardItem.target = self;
-  [menu addItem:keyboardItem];
+  // 1. Welcome & Setup Guide
+  NSMenuItem *welcomeItem = [[NSMenuItem alloc] initWithTitle:@"Welcome & Setup Guide"
+                                                       action:@selector(showWelcomeWindow:)
+                                                keyEquivalent:@""];
+  welcomeItem.target = self;
+  [menu addItem:welcomeItem];
 
-  if (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic) {
+  // 2. Wijesekara Keyboard (only in Wijesekara mode) or Phonetic Guide (in phonetic modes)
+  if (mode == AksharaInputModeWijesekara) {
+    NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Wijesekara Keyboard"
+                                                           action:@selector(showWijesekaraKeyboard:)
+                                                    keyEquivalent:@""];
+    keyboardItem.target = self;
+    [menu addItem:keyboardItem];
+  } else if (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic) {
     NSString *guideTitle = mode == AksharaInputModeSmartPhonetic
-        ? @"Smart Phonetic Typing Guide..."
-        : @"Phonetic Typing Guide...";
+        ? @"Smart Phonetic Typing Guide"
+        : @"Phonetic Typing Guide";
     NSMenuItem *guideItem = [[NSMenuItem alloc] initWithTitle:guideTitle
                                                         action:@selector(showPhoneticTypingGuide:)
                                                  keyEquivalent:@""];
@@ -654,21 +662,22 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [menu addItem:guideItem];
   }
 
-  NSMenuItem *welcomeItem = [[NSMenuItem alloc] initWithTitle:@"Welcome & Setup Guide..."
-                                                       action:@selector(showWelcomeWindow:)
-                                                keyEquivalent:@""];
-  welcomeItem.target = self;
-  [menu addItem:welcomeItem];
-
+  // 3. Check for Updates
   AutoUpdater *updater = [AutoUpdater sharedUpdater];
   BOOL updateAvailable = [updater isUpdateAvailable];
   NSString *title = updateAvailable
-      ? [NSString stringWithFormat:@"Install Akshara %@...", [updater availableVersion]]
-      : @"Check for Updates...";
+      ? [NSString stringWithFormat:@"Install Akshara %@", [updater availableVersion]]
+      : @"Check for Updates";
   NSMenuItem *updateItem = [[NSMenuItem alloc] initWithTitle:title
                                                       action:updateAvailable ? @selector(installAvailableUpdate:) : @selector(checkForUpdatesManually:)
                                                keyEquivalent:@""];
   updateItem.target = self;
+  NSImage *updateIcon = [NSImage imageNamed:@"arrow.trianglehead.2.clockwise"];
+  if (updateIcon) {
+    CGFloat menuFontSize = [NSFont menuFontOfSize:0].pointSize;
+    [updateIcon setSize:NSMakeSize(menuFontSize, menuFontSize)];
+    updateItem.image = updateIcon;
+  }
   [menu addItem:updateItem];
   return menu;
 }
