@@ -110,8 +110,24 @@ import SwiftUI
         window.delegate = self
         window.center()
         phoneticGuideWindow = window
+        
+        // Setup initial state for animation
+        window.alphaValue = 0.0
+        var frame = window.frame
+        frame.origin.y += 20 // Start slightly higher for slide down effect
+        window.setFrame(frame, display: false)
+        
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        
+        // Animate fade-in and slide-down
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.4
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            window.animator().alphaValue = 1.0
+            frame.origin.y -= 20
+            window.animator().setFrame(frame, display: true)
+        }
     }
 
     public func windowWillClose(_ notification: Notification) {

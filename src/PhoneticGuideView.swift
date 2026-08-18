@@ -344,13 +344,27 @@ struct GuideSection<Content: View>: View {
     }
 }
 
+class ExpandState: ObservableObject {
+    @Published var isExpanded: Bool = false
+}
+
 @available(macOS 11.0, *)
 struct CollapsibleGuideSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
 
+    @StateObject private var expandState = ExpandState()
+
     var body: some View {
         DisclosureGroup(
+            isExpanded: Binding(
+                get: { expandState.isExpanded },
+                set: { newValue in
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        expandState.isExpanded = newValue
+                    }
+                }
+            ),
             content: {
                 VStack(alignment: .leading, spacing: 14) {
                     Divider().padding(.vertical, 4)
