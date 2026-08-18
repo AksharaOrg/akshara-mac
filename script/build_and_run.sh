@@ -7,12 +7,13 @@ BUNDLE_ID="com.local.inputmethod.Akshara"
 MODE="${1:-run}"
 BUILD_DIR="$ROOT/build"
 DIST_DIR="$ROOT/dist"
+MODULE_CACHE="$BUILD_DIR/ModuleCache"
 APP="$DIST_DIR/$APP_NAME.app"
 CONTENTS="$APP/Contents"
 MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
 
-mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES"
+mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES" "$MODULE_CACHE"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
@@ -20,18 +21,22 @@ swiftc \
   -emit-object \
   -wmo \
   -module-name Akshara \
+  -module-cache-path "$MODULE_CACHE" \
   -emit-objc-header-path "$ROOT/src/Akshara-Swift.h" \
   -parse-as-library \
   -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
   -o "$BUILD_DIR/SwiftCode.o" \
   "$ROOT/src/WelcomeView.swift" \
   "$ROOT/src/PhoneticGuideView.swift" \
-  "$ROOT/src/WelcomeWindowManager.swift"
+  "$ROOT/src/WelcomeWindowManager.swift" \
+  "$ROOT/src/CapsLockHUD.swift"
 
 
 
 clang \
   -fobjc-arc \
+  -fmodules \
+  -fmodules-cache-path="$MODULE_CACHE" \
   -Wall -Wextra -Werror=return-type \
   -I "$BUILD_DIR" \
   -framework Cocoa \

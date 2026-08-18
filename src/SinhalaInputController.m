@@ -170,6 +170,7 @@
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
 @property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
 @property(nonatomic, assign) NSRange lastReportedRange;
+@property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
@@ -395,8 +396,22 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return NO;
 }
 
+- (BOOL)handleEvent:(NSEvent *)event client:(id)sender {
+  // Only intercept Caps Lock (NSEventTypeFlagsChanged). Never consume it - return NO
+  // so the system handles it normally. This is the safe IMK pattern.
+  if (event.type == NSEventTypeFlagsChanged) {
+    BOOL isCapsOn = (event.modifierFlags & NSEventModifierFlagCapsLock) != 0;
+    if (isCapsOn != _lastKnownCapsLockState) {
+      _lastKnownCapsLockState = isCapsOn;
+      [[AksharaCapsLockHUD shared] showWithCapsLockOn:isCapsOn];
+    }
+  }
+  return NO; // Always pass event through
+}
+
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
   if ((keyCode >= 123 && keyCode <= 126) || keyCode == 115 || keyCode == 119 || keyCode == 116 || keyCode == 121) {
+
     if (self.rawBuffer.length > 0) {
       [self commitComposition:sender];
     }
@@ -458,13 +473,20 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     if (self.rawBuffer.length == 0) {
       return NO;
     }
-
-    // The buffer preserves Wijesekara's visual input order.  A rendered
-    // Sinhala grapheme can therefore be composed from several buffer units
-    // (for example, "ෙකා" renders as "කො").  Backspace must remove just the
-    // most recent input unit; trying to infer how many units to remove from
-    // rendered grapheme counts can consume the preceding vowel sequence too.
-    [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
+    
+    NSString *currentComposed = self.lastCommittedString ?: @"";
+    NSUInteger targetGraphemes = [self graphemeCountForString:currentComposed];
+    if (targetGraphemes > 0) {
+      targetGraphemes -= 1;
+    }
+    
+    while (self.rawBuffer.length > 0) {
+      [self.rawBuffer deleteCharactersInRange:NSMakeRange(self.rawBuffer.length - 1, 1)];
+      NSString *newComposed = [self markedString];
+      if ([self graphemeCountForString:newComposed] <= targetGraphemes) {
+        break;
+      }
+    }
     
     BOOL shouldReturnNo = (self.rawBuffer.length == 0);
     [self updateCustomComposition];
@@ -586,6 +608,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)activateServer:(id)sender {
   [super activateServer:sender];
+  // Seed initial caps lock state for HUD delta detection
+  _lastKnownCapsLockState = ([NSEvent modifierFlags] & NSEventModifierFlagCapsLock) != 0;
+  // Kick HUD singleton alive on main thread (safe, no polling)
+  dispatch_async(dispatch_get_main_queue(), ^{ (void)[AksharaCapsLockHUD shared]; });
   // Keyboard Viewer asks for the active input method's layout as soon as the
   // source is selected, before the first key event reaches inputText:.
   [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
@@ -611,16 +637,24 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
   AksharaInputMode mode = [self currentInputMode];
 
-  NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Wijesekara Keyboard..."
-                                                         action:@selector(showWijesekaraKeyboard:)
-                                                  keyEquivalent:@""];
-  keyboardItem.target = self;
-  [menu addItem:keyboardItem];
+  // 1. Welcome & Setup Guide
+  NSMenuItem *welcomeItem = [[NSMenuItem alloc] initWithTitle:@"Welcome & Setup Guide"
+                                                       action:@selector(showWelcomeWindow:)
+                                                keyEquivalent:@""];
+  welcomeItem.target = self;
+  [menu addItem:welcomeItem];
 
-  if (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic) {
+  // 2. Wijesekara Keyboard (only in Wijesekara mode) or Phonetic Guide (in phonetic modes)
+  if (mode == AksharaInputModeWijesekara) {
+    NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Wijesekara Keyboard"
+                                                           action:@selector(showWijesekaraKeyboard:)
+                                                    keyEquivalent:@""];
+    keyboardItem.target = self;
+    [menu addItem:keyboardItem];
+  } else if (mode == AksharaInputModePhonetic || mode == AksharaInputModeSmartPhonetic) {
     NSString *guideTitle = mode == AksharaInputModeSmartPhonetic
-        ? @"Smart Phonetic Typing Guide..."
-        : @"Phonetic Typing Guide...";
+        ? @"Smart Phonetic Typing Guide"
+        : @"Phonetic Typing Guide";
     NSMenuItem *guideItem = [[NSMenuItem alloc] initWithTitle:guideTitle
                                                         action:@selector(showPhoneticTypingGuide:)
                                                  keyEquivalent:@""];
@@ -628,21 +662,22 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [menu addItem:guideItem];
   }
 
-  NSMenuItem *welcomeItem = [[NSMenuItem alloc] initWithTitle:@"Welcome & Setup Guide..."
-                                                       action:@selector(showWelcomeWindow:)
-                                                keyEquivalent:@""];
-  welcomeItem.target = self;
-  [menu addItem:welcomeItem];
-
+  // 3. Check for Updates
   AutoUpdater *updater = [AutoUpdater sharedUpdater];
   BOOL updateAvailable = [updater isUpdateAvailable];
   NSString *title = updateAvailable
-      ? [NSString stringWithFormat:@"Install Akshara %@...", [updater availableVersion]]
-      : @"Check for Updates...";
+      ? [NSString stringWithFormat:@"Install Akshara %@", [updater availableVersion]]
+      : @"Check for Updates";
   NSMenuItem *updateItem = [[NSMenuItem alloc] initWithTitle:title
                                                       action:updateAvailable ? @selector(installAvailableUpdate:) : @selector(checkForUpdatesManually:)
                                                keyEquivalent:@""];
   updateItem.target = self;
+  NSImage *updateIcon = [NSImage imageNamed:@"arrow.trianglehead.2.clockwise"];
+  if (updateIcon) {
+    CGFloat menuFontSize = [NSFont menuFontOfSize:0].pointSize;
+    [updateIcon setSize:NSMakeSize(menuFontSize, menuFontSize)];
+    updateItem.image = updateIcon;
+  }
   [menu addItem:updateItem];
   return menu;
 }

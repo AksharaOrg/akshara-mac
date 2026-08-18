@@ -115,7 +115,11 @@ struct WelcomeView: View {
 
     @ViewBuilder
     private var windowBackground: some View {
-        VisualEffectBackground()
+        if #available(macOS 26.0, *) {
+            GlassEffectBackground()
+        } else {
+            VisualEffectBackground()
+        }
     }
 
     private var introView: some View {
@@ -319,6 +323,14 @@ struct WelcomeView: View {
                 .buttonStyle(.link)
                 .help("View Akshara on GitHub")
 
+                Button(action: {
+                    AutoUpdater.shared().checkForUpdatesManually()
+                }) {
+                    Label("Check Updates", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.link)
+                .help("Check for the latest version of Akshara")
+
                 Spacer()
                 
                 if viewModel.instructionStep > 0 {
@@ -391,6 +403,17 @@ struct WelcomeView: View {
             
             VStack(spacing: 16) {
                 Button(action: {
+                    AutoUpdater.shared().checkForUpdatesManually()
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                        Text("Check for Updates")
+                    }
+                }
+                .controlSize(.large)
+                .padding(.top, 24)
+
+                Button(action: {
                     onDismiss?()
                 }) {
                     HStack(spacing: 5) {
@@ -400,7 +423,6 @@ struct WelcomeView: View {
                 }
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
-                .padding(.top, 24)
             }
         }
         .padding(32)
@@ -536,7 +558,29 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
+@available(macOS 26.0, *)
+class DraggableGlassEffectView: NSGlassEffectView {
+    override var mouseDownCanMoveWindow: Bool {
+        return true
+    }
 
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+}
+
+@available(macOS 26.0, *)
+struct GlassEffectBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSGlassEffectView {
+        let view = DraggableGlassEffectView()
+        view.wantsLayer = true
+        view.layer?.cornerRadius = 16
+        view.layer?.masksToBounds = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSGlassEffectView, context: Context) {}
+}
 
 
 @available(macOS 11.0, *)

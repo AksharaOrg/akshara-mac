@@ -45,32 +45,17 @@ for size in 16 32 128 256 512; do
 done
 /usr/bin/iconutil -c icns "$ICONSET" -o "$RESOURCES/Akshara.icns"
 
-# The illustrated Akshara logo is detailed enough to disappear at 16pt. The
-# menu bar instead uses the compact Sinhala අක mark, with a separate white
-# asset for light icons on dark menu-bar styles. A subtle dilation gives the
-# small glyph the weight of a bold menu-bar icon without blurring it.
-magick -size 512x512 xc:none \
-  -font "$MENU_FONT" -gravity center -pointsize 310 -fill black \
-  -annotate +0+16 'අක' \
-  -trim +repage -morphology Dilate Disk:5 -trim +repage -resize '32x30>' \
-  -depth 8 -define png:color-type=6 \
-  "$WORK/AksharaMenuBlack.png"
-magick "$WORK/AksharaMenuBlack.png" \
-  -fill white -colorize 100 \
-  -depth 8 -define png:color-type=6 \
-  "$WORK/AksharaMenuWhite.png"
-
- # Give the optical glyph a one-pixel (at @2x) lower baseline in its compact
- # canvas. This corrects Sinhala's high apparent centre without reintroducing
- # the old square padding.
-magick -size 32x20 xc:none \
-  \( "$WORK/AksharaMenuBlack.png" \) -geometry +0+2 -composite \
+# Generate a standard macOS rounded-rectangle style input menu icon.
+magick -size 560x440 xc:none \
+  -fill black -draw "roundrectangle 0,0 559,439 120,120" \
+  \( -size 560x440 xc:none -font "$MENU_FONT" -gravity center -pointsize 320 -fill black -annotate +0-15 'අක' -morphology Dilate Disk:3 \) \
+  -compose DstOut -composite \
+  -resize '56x44!' \
   "$WORK/AksharaMenuBlackCanvas.png"
-magick -size 32x20 xc:none \
-  \( "$WORK/AksharaMenuWhite.png" \) -geometry +0+2 -composite \
-  "$WORK/AksharaMenuWhiteCanvas.png"
 
-magick "$WORK/AksharaMenuBlackCanvas.png" -resize 16x10 \
+magick "$WORK/AksharaMenuBlackCanvas.png" -fill white -colorize 100 "$WORK/AksharaMenuWhiteCanvas.png"
+
+magick "$WORK/AksharaMenuBlackCanvas.png" -resize 28x22 \
   -colorspace sRGB -type TrueColorAlpha \
   -define tiff:photometric=RGB -define tiff:alpha=unassociated \
   -depth 8 "$RESOURCES/AksharaMenu.tif"
@@ -78,7 +63,7 @@ magick "$WORK/AksharaMenuBlackCanvas.png" \
   -colorspace sRGB -type TrueColorAlpha \
   -define tiff:photometric=RGB -define tiff:alpha=unassociated \
   -depth 8 "$RESOURCES/AksharaMenu@2x.tif"
-magick "$WORK/AksharaMenuWhiteCanvas.png" -resize 16x10 \
+magick "$WORK/AksharaMenuWhiteCanvas.png" -resize 28x22 \
   -colorspace sRGB -type TrueColorAlpha \
   -define tiff:photometric=RGB -define tiff:alpha=unassociated \
   -depth 8 "$RESOURCES/AksharaMenuWhite.tif"

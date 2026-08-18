@@ -19,6 +19,8 @@ elif [[ ! -d "$SRC" ]]; then
 fi
 
 mkdir -p "$DST_DIR"
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$DST" >/dev/null 2>&1 || true
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$LEGACY_DST" >/dev/null 2>&1 || true
 rm -rf "$DST"
 rm -rf "$LEGACY_DST"
 cp -R "$SRC" "$DST"
@@ -33,15 +35,21 @@ killall "$APP_PROCESS" 2>/dev/null || true
 killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
-echo "Installed $DST"
-echo "Log out/in if it does not appear immediately in System Settings > Keyboard > Input Sources."
+killall "System Settings" 2>/dev/null || true
 
-/usr/bin/osascript -e '
-tell application "System Events"
-    activate
-    set dialogResult to display dialog "Akshara has been installed. Restarting now is recommended: without a restart, the input method may not appear or work correctly until you log out and back in." with title "Restart Recommended" buttons {"Restart Later", "Restart Now"} default button "Restart Now" cancel button "Restart Later" with icon caution
-    if button returned of dialogResult is "Restart Now" then
-        restart
-    end if
-end tell
-' || true
+USER_ID=$(id -u)
+launchctl kickstart -k "gui/$USER_ID/com.apple.TextInputMenuAgent" 2>/dev/null || true
+launchctl kickstart -k "gui/$USER_ID/com.apple.TextInputUI.xpc.CursorUIViewService" 2>/dev/null || true
+launchctl kickstart -k "gui/$USER_ID/com.apple.TextInputSwitcher" 2>/dev/null || true
+
+killall SystemUIServer 2>/dev/null || true
+rm -rf ~/Library/Caches/com.apple.IntlDataCache* 2>/dev/null || true
+
+echo "Enabled Akshara input sources"
+echo "Keyboard has been reloaded. It should now work without restarting."
+
+# Show a native glassy restart dialog if running interactively (not in CI)
+if [[ -t 1 ]]; then
+  /usr/bin/swift "$ROOT/script/restart_dialog.swift" || true
+fi
+
