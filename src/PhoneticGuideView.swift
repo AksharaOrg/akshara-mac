@@ -84,42 +84,121 @@ struct PhoneticGuideView: View {
 @available(macOS 11.0, *)
 struct NormalPhoneticContent: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            GuideSection(title: "Start with the sound") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Type a consonant followed by its vowel sound. The text is composed as you type.")
+        VStack(alignment: .leading, spacing: 16) {
+            
+            CollapsibleGuideSection(title: "ස්වර අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරු වලින් ලිවිය හැක. දීර්ඝ කිරීමකදී එකම ඉංග්‍රීසි අකුර දෙවරක් යෙදේ.")
                         .font(.callout)
                         .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
                     ExampleGrid(rows: [
-                        ("ka", "ක"), ("kaa", "කා"), ("ki", "කි"),
-                        ("kee", "කේ"), ("ko", "කො"), ("koo", "කෝ")
-                    ])
+                        ("a", "අ"), ("aa", "ආ"),
+                        ("ae", "ඇ"), ("aee", "ඈ"),
+                        ("i", "ඉ"), ("ii", "ඊ"),
+                        ("u", "උ"), ("uu", "ඌ"),
+                        ("e", "එ"), ("ee", "ඒ"),
+                        ("ai", "ඓ"),
+                        ("o", "ඔ"), ("oo", "ඕ"),
+                        ("au", "ඖ")
+                    ], columns: 2)
                 }
             }
+            
+            CollapsibleGuideSection(title: "ව්‍යංජන අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරු වලින් ලිවිය හැක. මූර්ධජ අකුරු ලිවීම සඳහා ශබ්දානුකූල ඉංග්‍රීසි අකුරේ කැපිටල් අකුරු භාවිතා කෙරේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("ka", "ක"), ("ga", "ග"),
+                        ("cha", "ච"), ("ja", "ජ"),
+                        ("ta", "ට"), ("da", "ඩ"),
+                        ("tha", "ත"), ("dh", "ද"),
+                        ("na", "න"), ("Na", "ණ"),
+                        ("pa", "ප"), ("ba", "බ"),
+                        ("ma", "ම"), ("ya", "ය"),
+                        ("ra", "ර"), ("la", "ල"),
+                        ("La", "ළ"), ("wa / va", "ව"),
+                        ("sa", "ස"), ("sha", "ශ"),
+                        ("Sh", "ෂ"), ("ha", "හ"),
+                        ("fa", "ෆ")
+                    ], columns: 3)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "මහප්‍රාණ අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරක් සමඟ h අකුරක් යොදා මහප්‍රාණ අක්ෂර යතුරු කළ හැක. ඨ, ඪ, ඡ ආදිය සඳහා කැපිටල් අකුරු භාවිතා කෙරේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("kh", "ඛ"), ("gh", "ඝ"),
+                        ("C", "ඡ"), ("jh", "ඣ"),
+                        ("Th", "ඨ"), ("Dh", "ඪ"),
+                        ("ph", "ඵ"), ("bh", "භ")
+                    ], columns: 2)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "සඤ්ඤක අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සඤ්ඤක අකුරු සඳහා පහත සංයෝජන භාවිතා වේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-            GuideSection(title: "A few useful patterns") {
-                VStack(alignment: .leading, spacing: 11) {
-                    GuidePattern(input: "amma", output: "අම්ම", note: "Type each sound in sequence.")
-                    GuidePattern(input: "sh", output: "ශ", note: "Use h after a consonant for common aspirated and combined sounds.")
-                    GuidePattern(input: "kri", output: "ක්‍රි", note: "Add r or y after a consonant for joined forms.")
+                    ExampleGrid(rows: [
+                        ("nnga", "ඟ"), ("nnja", "ඦ"),
+                        ("nnda", "ඬ"), ("nndha / nnqa", "ඳ"),
+                        ("nnka", "ඤ"), ("nnha", "ඥ"),
+                        ("Ba", "ඹ")
+                    ], columns: 2)
                 }
             }
-
-            GuideSection(title: "Try these words") {
-                VStack(alignment: .leading, spacing: 11) {
-                    GuidePattern(input: "mama", output: "මම", note: "A simple two-syllable word.")
-                    GuidePattern(input: "siMhala", output: "සිංහල", note: "Use uppercase M for anusvara.")
-                    GuidePattern(input: "kramaya", output: "ක්‍රමය", note: "r joins with the preceding consonant.")
-                    GuidePattern(input: "priya", output: "ප්‍රිය", note: "A common joined consonant pattern.")
+            
+            CollapsibleGuideSection(title: "වෙනත් අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("විශේෂ ශබ්ද සඳහා පහත අකුරු සංයෝජන භාවිතා වේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("ng", "ඞ"), ("gn", "ඥ"),
+                        ("ny", "ඤ"), ("M", "ං"),
+                        ("H", "ඃ")
+                    ], columns: 2)
                 }
             }
-
-            GuideSection(title: "Helpful keys") {
-                VStack(alignment: .leading, spacing: 11) {
-                    GuidePattern(input: "M", output: "ං", note: "Use uppercase M for anusvara.")
-                    GuidePattern(input: "H", output: "ඃ", note: "Use uppercase H for visarga.")
+            
+            CollapsibleGuideSection(title: "පිළි සමඟ ව්‍යංජන අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරු සංයෝජනයෙන් යතුරු කළ හැක.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("k", "ක්"), ("ka", "ක"),
+                        ("kaa", "කා"), ("kae", "කැ"),
+                        ("kaee", "කෑ"), ("ki", "කි"),
+                        ("kii", "කී"), ("ku", "කු"),
+                        ("kuu", "කූ"), ("ke", "කෙ"),
+                        ("kee", "කේ"), ("kai", "කෛ"),
+                        ("ko", "කො"), ("koo", "කෝ"),
+                        ("kau", "කෞ"), ("kH", "කඃ"),
+                        ("kM", "කං"), ("kya", "ක්‍ය"),
+                        ("kra", "ක්‍ර")
+                    ], columns: 2)
                 }
             }
+            
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
