@@ -40,5 +40,11 @@ killall TextInputMenuAgent 2>/dev/null || true
 killall SystemUIServer 2>/dev/null || true
 rm -rf ~/Library/Caches/com.apple.IntlDataCache* 2>/dev/null || true
 
+echo "Enabled Akshara input sources"
 echo "Keyboard has been reloaded. It should now work without restarting."
+
+# Show a native glassy restart dialog if running interactively (not in CI)
+if [[ -t 1 ]]; then
+  /usr/bin/swift "$ROOT/script/restart_dialog.swift" || true
+fi
 
