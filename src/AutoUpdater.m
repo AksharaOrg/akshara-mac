@@ -141,9 +141,10 @@
 }
 
 - (void)showManualUpdateAlertForVersion:(NSString *)version {
+    NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = @"Akshara Update Available";
-    alert.informativeText = [NSString stringWithFormat:@"Version %@ is ready to install.", version];
+    alert.informativeText = [NSString stringWithFormat:@"Your current Akshara version is %@. Version %@ is ready to install.", currentVersion ?: @"Unknown", version];
     [alert addButtonWithTitle:@"Install Update"];
     [alert addButtonWithTitle:@"Later"];
     if ([alert runModal] == NSAlertFirstButtonReturn) {
