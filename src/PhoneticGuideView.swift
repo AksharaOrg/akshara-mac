@@ -3,85 +3,303 @@ import SwiftUI
 @available(macOS 11.0, *)
 struct PhoneticGuideView: View {
     let isSmart: Bool
+    var onDismiss: (() -> Void)?
 
     private var modeName: String { isSmart ? "Smart Phonetic" : "Phonetic" }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Label("\(modeName) Typing", systemImage: "text.cursor")
-                        .font(.title2.weight(.semibold))
-                    Text("Write Sinhala by typing the sound with familiar Roman letters.")
-                        .foregroundColor(.secondary)
-                }
-
-                GroupBox("Start with the sound") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Type a consonant followed by its vowel sound. The text is composed as you type.")
-                            .font(.callout)
-                            .foregroundColor(.secondary)
-                        ExampleGrid(rows: [
-                            ("ka", "ක"), ("kaa", "කා"), ("ki", "කි"),
-                            ("kee", "කේ"), ("ko", "කො"), ("koo", "කෝ")
-                        ])
-                    }
-                    .padding(.top, 3)
-                }
-
-                GroupBox("A few useful patterns") {
-                    VStack(alignment: .leading, spacing: 11) {
-                        GuidePattern(input: "amma", output: "අම්ම", note: "Type each sound in sequence.")
-                        GuidePattern(input: "sh", output: "ශ", note: "Use h after a consonant for common aspirated and combined sounds.")
-                        GuidePattern(input: "kri", output: "ක්‍රි", note: "Add r or y after a consonant for joined forms.")
-                    }
-                    .padding(.top, 3)
-                }
-
-                GroupBox("Try these words") {
-                    VStack(alignment: .leading, spacing: 11) {
-                        GuidePattern(input: "mama", output: "මම", note: "A simple two-syllable word.")
-                        GuidePattern(input: "siMhala", output: "සිංහල", note: "Use uppercase M for anusvara; Smart Phonetic also accepts x.")
-                        GuidePattern(input: "kramaya", output: "ක්‍රමය", note: "r joins with the preceding consonant.")
-                        GuidePattern(input: "priya", output: "ප්‍රිය", note: "A common joined consonant pattern.")
-                    }
-                    .padding(.top, 3)
-                }
-
+        VStack(spacing: 0) {
+            header
+            
+            ScrollView {
                 if isSmart {
-                    GroupBox("Smart Phonetic shortcuts") {
-                        VStack(alignment: .leading, spacing: 11) {
-                            GuidePattern(input: "x", output: "ං", note: "A quick shortcut for anusvara.")
-                            GuidePattern(input: "q", output: "ද", note: "A quick alternative for da.")
-                            GuidePattern(input: "zg", output: "ඟ", note: "Use z before selected sounds for sanyakaya letters.")
-                        }
-                        .padding(.top, 3)
-                    }
+                    SmartPhoneticContent()
                 } else {
-                    GroupBox("Helpful keys") {
-                        VStack(alignment: .leading, spacing: 11) {
-                            GuidePattern(input: "M", output: "ං", note: "Use uppercase M for anusvara.")
-                            GuidePattern(input: "H", output: "ඃ", note: "Use uppercase H for visarga.")
-                        }
-                        .padding(.top, 3)
-                    }
+                    NormalPhoneticContent()
                 }
-
             }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            footer
         }
-        .frame(width: 520, height: isSmart ? 580 : 520)
-        .background(Color(NSColor.windowBackgroundColor))
+        .frame(width: 520, height: isSmart ? 600 : 540)
+        .background(windowBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .edgesIgnoringSafeArea(.all)
+    }
+
+    @ViewBuilder
+    private var windowBackground: some View {
+        if #available(macOS 26.0, *) {
+            GlassEffectBackground()
+        } else {
+            VisualEffectBackground()
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 48, height: 48)
+                Image(systemName: "text.cursor")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(modeName) Typing")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text(isSmart ? "Comprehensive guide for Smart Phonetic typing." : "Write Sinhala by typing the sound with familiar Roman letters.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 12)
+    }
+
+    private var footer: some View {
+        HStack {
+            Spacer()
+            Button(action: {
+                onDismiss?()
+            }) {
+                Text("Close")
+                    .frame(minWidth: 60)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .keyboardShortcut(.defaultAction)
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 24)
+        .padding(.top, 12)
+    }
+}
+
+@available(macOS 11.0, *)
+struct NormalPhoneticContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            GuideSection(title: "Start with the sound") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Type a consonant followed by its vowel sound. The text is composed as you type.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                    ExampleGrid(rows: [
+                        ("ka", "ක"), ("kaa", "කා"), ("ki", "කි"),
+                        ("kee", "කේ"), ("ko", "කො"), ("koo", "කෝ")
+                    ])
+                }
+            }
+
+            GuideSection(title: "A few useful patterns") {
+                VStack(alignment: .leading, spacing: 11) {
+                    GuidePattern(input: "amma", output: "අම්ම", note: "Type each sound in sequence.")
+                    GuidePattern(input: "sh", output: "ශ", note: "Use h after a consonant for common aspirated and combined sounds.")
+                    GuidePattern(input: "kri", output: "ක්‍රි", note: "Add r or y after a consonant for joined forms.")
+                }
+            }
+
+            GuideSection(title: "Try these words") {
+                VStack(alignment: .leading, spacing: 11) {
+                    GuidePattern(input: "mama", output: "මම", note: "A simple two-syllable word.")
+                    GuidePattern(input: "siMhala", output: "සිංහල", note: "Use uppercase M for anusvara.")
+                    GuidePattern(input: "kramaya", output: "ක්‍රමය", note: "r joins with the preceding consonant.")
+                    GuidePattern(input: "priya", output: "ප්‍රිය", note: "A common joined consonant pattern.")
+                }
+            }
+
+            GuideSection(title: "Helpful keys") {
+                VStack(alignment: .leading, spacing: 11) {
+                    GuidePattern(input: "M", output: "ං", note: "Use uppercase M for anusvara.")
+                    GuidePattern(input: "H", output: "ඃ", note: "Use uppercase H for visarga.")
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+    }
+}
+
+@available(macOS 11.0, *)
+struct SmartPhoneticContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            
+            CollapsibleGuideSection(title: "ස්වර අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරු වලින් ලිවිය හැක. දීර්ඝ කිරීමකදී එකම ඉංග්‍රීසි අකුර දෙවරක් යෙදේ. ‘ඇ’ සහ ‘ඍ’ සඳහා පමණක් ඉංග්‍රීසි කැපිටල් අකුරු යෙදේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("a", "අ"), ("aa", "ආ"),
+                        ("A", "ඇ"), ("Aa / AA", "ඈ"),
+                        ("i", "ඉ"), ("ii", "ඊ"),
+                        ("u", "උ"), ("uu", "ඌ"),
+                        ("R", "ඍ"), ("Ru", "ඎ"),
+                        ("e", "එ"), ("ee", "ඒ"),
+                        ("ai", "ඓ"),
+                        ("o", "ඔ"), ("oo", "ඕ"),
+                        ("au / ou", "ඖ")
+                    ], columns: 2)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "ව්‍යංජන අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරු වලින් ලිවිය හැක. මූර්ධජ අකුරු ලිවීම සඳහා ශබ්දානුකූල ඉංග්‍රීසි අකුරේ කැපිටල් අකුරු භාවිතා කෙරේ. ’ද’ සඳහා පමණක් dha හෝ q යෙදේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("ka", "ක"), ("ga", "ග"),
+                        ("cha", "ච"), ("ja", "ජ"),
+                        ("ta", "ට"), ("da", "ඩ"),
+                        ("tha", "ත"), ("dha / qa", "ද"),
+                        ("na", "න"), ("Na", "ණ"),
+                        ("pa", "ප"), ("ba", "බ"),
+                        ("ma", "ම"), ("ya", "ය"),
+                        ("ra", "ර"), ("la", "ල"),
+                        ("La", "ළ"), ("wa / va", "ව"),
+                        ("sa", "ස"), ("sha", "ශ"),
+                        ("Sa / Sha", "ෂ"), ("ha", "හ"),
+                        ("fa", "ෆ")
+                    ], columns: 3)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "මහප්‍රාණ අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරක් සමඟ h අකුරක් යොදා මහප්‍රාණ අක්ෂර යතුරු කළ හැක. ‘ඨ’ සහ ‘ඪ’ පමණක් ශබ්දානුකූ ඉංග්‍රීසි අකුරේ කැපිටල් අකුරු භාවිතා කෙරේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("kha", "ඛ"), ("gha", "ඝ"),
+                        ("chha", "ඡ"), ("Ta", "ඨ"),
+                        ("Da", "ඪ"), ("thha", "ථ"),
+                        ("dhha", "ධ"), ("pha", "ඵ"),
+                        ("bha", "භ")
+                    ], columns: 2)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "සඤ්ඤක සහ වෙනත් අක්ෂර") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුර ඉදිරියට z අකුරක් යොදා සඤ්ඤක අක්ෂර යතුරු කළ හැක. ‘ඹ' සඳහා පමණක් කැපිටල් B යෙදේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("zga", "ඟ"), ("zja", "ඦ"),
+                        ("zda", "ඬ"), ("zdha, zqa", "ඳ"),
+                        ("zka", "ඤ"), ("zha", "ඥ"),
+                        ("Ba", "ඹ"), ("Lu", "ළු")
+                    ], columns: 2)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "පිළි සමඟ ව්‍යංජන අක්ෂර යතුරුකරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("සාමාන්‍ය ශබ්දානුකූල ඉංග්‍රීසි අකුරු සංයෝජනයෙන් යතුරු කළ හැක. දීර්ඝ පිළි යෙදීමේදී එකම ඉංග්‍රීසි අකුර දෙවරක් යෙදේ. ‘ැ’ සඳහා පමණක් ඉංග්‍රීසි කැපිටල් අකුරු A යෙදේ.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    ExampleGrid(rows: [
+                        ("k", "ක්"), ("ka", "ක"),
+                        ("kaa", "කා"), ("kA", "කැ"),
+                        ("kAa / kAA", "කෑ"), ("ki", "කි"),
+                        ("kii", "කී"), ("ku", "කු"),
+                        ("kuu", "කූ"), ("kru", "කෘ"),
+                        ("kruu", "කෲ"), ("ke", "කෙ"),
+                        ("kee", "කේ"), ("kai", "කෛ"),
+                        ("ko", "කො"), ("koo", "කෝ"),
+                        ("kau", "කෞ"), ("kaH", "කඃ"),
+                        ("kax / kazn", "කං"), ("kaX", "කඞ"),
+                        ("kya", "ක්‍ය"), ("kra", "ක්‍ර")
+                    ], columns: 2)
+                }
+            }
+            
+            CollapsibleGuideSection(title: "බැඳි අක්ෂර යතුරු කරන ආකාරය") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("ශබ්දානුකූල ක්‍රමයෙන් බැඳි අක්ෂර ලිවිය නොහැකි නමුත් විජේසේකර ක්‍රමයෙන් බැඳි අක්ෂර ලිවිය හැක.")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+    }
+}
+
+@available(macOS 11.0, *)
+struct GuideSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.headline)
+            content
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+@available(macOS 11.0, *)
+struct CollapsibleGuideSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        DisclosureGroup(
+            content: {
+                VStack(alignment: .leading, spacing: 14) {
+                    Divider().padding(.vertical, 4)
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            },
+            label: {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+            }
+        )
+        .padding(16)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
 @available(macOS 11.0, *)
 private struct ExampleGrid: View {
     let rows: [(String, String)]
+    var columns: Int = 3
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+        let gridItems = Array(repeating: GridItem(.flexible()), count: columns)
+        
+        LazyVGrid(columns: gridItems, spacing: 8) {
             ForEach(rows, id: \.0) { input, output in
                 HStack(spacing: 7) {
                     Text(input)
@@ -93,10 +311,10 @@ private struct ExampleGrid: View {
                         .font(.body.weight(.medium))
                     Spacer(minLength: 0)
                 }
-                .padding(.vertical, 5)
-                .padding(.horizontal, 7)
-                .background(Color(NSColor.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
         }
     }
@@ -109,7 +327,7 @@ private struct GuidePattern: View {
     let note: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(input)
                 .font(.system(.body, design: .monospaced).weight(.medium))
                 .frame(width: 86, alignment: .leading)

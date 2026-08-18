@@ -81,15 +81,32 @@ import SwiftUI
 
         guard #available(macOS 11.0, *) else { return }
         let modeName = isSmart ? "Smart Phonetic" : "Phonetic"
+        
+        let guideView = PhoneticGuideView(
+            isSmart: isSmart,
+            onDismiss: { [weak self] in
+                self?.phoneticGuideWindow?.close()
+                self?.phoneticGuideWindow = nil
+            }
+        )
+        
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: isSmart ? 580 : 520),
-            styleMask: [.titled, .closable, .miniaturizable],
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: isSmart ? 600 : 540),
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.title = "Akshara \(modeName) Guide"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
         window.isRestorable = false
-        window.contentViewController = NSHostingController(rootView: PhoneticGuideView(isSmart: isSmart))
+        window.standardWindowButton(.zoomButton)?.isHidden = true
+        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        window.standardWindowButton(.closeButton)?.isHidden = true
+        
+        window.contentViewController = NSHostingController(rootView: guideView)
         window.delegate = self
         window.center()
         phoneticGuideWindow = window
