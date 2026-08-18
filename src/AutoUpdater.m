@@ -129,7 +129,7 @@
         } else if (isManual) {
             [self showUpToDateNotification];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self showManualUpToDateAlert];
+                [self showManualUpToDateAlertForCurrent:currentVersion latest:tagName];
             });
         }
     }];
@@ -151,10 +151,10 @@
     }
 }
 
-- (void)showManualUpToDateAlert {
+- (void)showManualUpToDateAlertForCurrent:(NSString *)current latest:(NSString *)latest {
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"Akshara is Up to Date";
-    alert.informativeText = @"You are already running the latest version of Akshara.";
+    alert.messageText = @"Akshara is up to date.";
+    alert.informativeText = [NSString stringWithFormat:@"You are already running the latest version of Akshara. There are currently no updates available.\n\nAkshara v%@", current];
     [alert addButtonWithTitle:@"OK"];
     [alert runModal];
 }
@@ -207,6 +207,13 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 
 - (void)downloadAndInstallUpdate {
     if (!self.downloadUrl) return;
+    
+    UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
+    content.title = @"Downloading Update";
+    content.body = @"Akshara is downloading the latest update. It will open automatically when ready.";
+    content.sound = [UNNotificationSound defaultSound];
+    UNNotificationRequest *req = [UNNotificationRequest requestWithIdentifier:@"AksharaDownloading" content:content trigger:nil];
+    [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:req withCompletionHandler:nil];
     
     NSURL *url = [NSURL URLWithString:self.downloadUrl];
     NSURLSessionDownloadTask *downloadTask = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
