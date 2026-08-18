@@ -1,97 +1,116 @@
 import Cocoa
-import Carbon
 
 @objc(AksharaCapsLockHUD)
 public class CapsLockHUD: NSObject {
     @objc public static let shared = CapsLockHUD()
-    
+
     private var window: NSWindow?
     private var dismissTimer: Timer?
-    private var lastKnownState: Bool = NSEvent.modifierFlags.contains(.capsLock)
-    
+    private var lastKnownState: Bool = false
+    private var monitor: Any?
+
     private override init() {
         super.init()
-        startMonitoring()
-    }
-    
-    private func startMonitoring() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        // Register global event monitor for Caps Lock changes.
+        // Input Methods already have keyboard access so this works without
+        // additional permissions.
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             guard let self = self else { return }
-            let currentState = NSEvent.modifierFlags.contains(.capsLock)
-            if currentState != self.lastKnownState {
-                self.lastKnownState = currentState
-                if self.isAksharaActive() {
-                    self.show(capsLockOn: currentState)
+            let isCapsOn = event.modifierFlags.contains(.capsLock)
+            if isCapsOn != self.lastKnownState {
+                self.lastKnownState = isCapsOn
+                DispatchQueue.main.async {
+                    self.displayHUD(capsLockOn: isCapsOn)
                 }
             }
         }
-    }
-    
-    private func isAksharaActive() -> Bool {
-        guard let currentSource = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return false }
-        if let idPtr = TISGetInputSourceProperty(currentSource, kTISPropertyInputSourceID) {
-            let id = Unmanaged<CFString>.fromOpaque(idPtr).takeUnretainedValue() as String
-            return id.contains("com.local.inputmethod.Akshara")
+        // Also add a local monitor so it works when Akshara itself has focus
+        NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            guard let self = self else { return event }
+            let isCapsOn = event.modifierFlags.contains(.capsLock)
+            if isCapsOn != self.lastKnownState {
+                self.lastKnownState = isCapsOn
+                DispatchQueue.main.async {
+                    self.displayHUD(capsLockOn: isCapsOn)
+                }
+            }
+            return event
         }
-        return false
     }
-    
-    @objc public func show(capsLockOn: Bool) {
-        // Ensure we execute on main thread
+
+    // Called from ObjC as a fallback (e.g. handleEvent: if it does fire)
+    @objc public func showWithCapsLockOn(_ capsLockOn: Bool) {
         DispatchQueue.main.async {
             self.displayHUD(capsLockOn: capsLockOn)
         }
     }
-    
+
     private func displayHUD(capsLockOn: Bool) {
+        assert(Thread.isMainThread)
+
+        // Build window once
         if window == nil {
-            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 220, height: 220),
-                               styleMask: .borderless,
-                               backing: .buffered,
-                               defer: false)
+            let size = NSSize(width: 220, height: 220)
+            let win = NSWindow(
+                contentRect: NSRect(origin: .zero, size: size),
+                styleMask: .borderless,
+                backing: .buffered,
+                defer: false
+            )
             win.isOpaque = false
             win.backgroundColor = .clear
-            win.level = .screenSaver // Very high level
+            // Use the highest possible window level so it appears above everything
+            win.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
             win.ignoresMouseEvents = true
-            win.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle]
-            
-            let contentView = HUDView(frame: win.contentView!.bounds)
-            win.contentView = contentView
+            win.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle, .stationary]
+            win.isReleasedWhenClosed = false
+
+            let effectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+            effectView.material = .hudWindow
+            effectView.blendingMode = .behindWindow
+            effectView.state = .active
+            effectView.wantsLayer = true
+            effectView.layer?.cornerRadius = 20
+            effectView.layer?.masksToBounds = true
+
+            let hudView = HUDView(frame: NSRect(origin: .zero, size: size))
+            effectView.addSubview(hudView)
+
+            win.contentView = effectView
             window = win
         }
-        
-        guard let window = window, let hudView = window.contentView as? HUDView else { return }
-        
-        // Update state
+
+        guard let window = window,
+              let effectView = window.contentView as? NSVisualEffectView,
+              let hudView = effectView.subviews.first as? HUDView
+        else { return }
+
         hudView.isCapsOn = capsLockOn
         hudView.needsDisplay = true
-        
-        // Position at bottom center of the main screen
+
+        // Center horizontally, 120pt above bottom of main screen
         if let screen = NSScreen.main {
-            let screenRect = screen.visibleFrame
-            let x = screenRect.midX - (window.frame.width / 2)
-            let y = screenRect.minY + 120 // 120 points above the dock/bottom
+            let sf = screen.visibleFrame
+            let x = sf.midX - window.frame.width / 2
+            let y = sf.minY + 120
             window.setFrameOrigin(NSPoint(x: x, y: y))
         }
-        
+
         window.alphaValue = 0.0
-        window.orderFrontRegardless() // Force it to the absolute front
-        
-        // Cancel any existing timer
+        window.orderFrontRegardless()
+
         dismissTimer?.invalidate()
-        
-        // Fade in
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.2
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.18
             window.animator().alphaValue = 1.0
         }, completionHandler: {
-            // Schedule fade out
+            let win = window
             self.dismissTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { _ in
-                NSAnimationContext.runAnimationGroup({ context in
-                    context.duration = 0.5
-                    window.animator().alphaValue = 0.0
+                NSAnimationContext.runAnimationGroup({ ctx in
+                    ctx.duration = 0.4
+                    win.animator().alphaValue = 0.0
                 }, completionHandler: {
-                    window.orderOut(nil)
+                    win.orderOut(nil)
                 })
             }
         })
@@ -100,73 +119,52 @@ public class CapsLockHUD: NSObject {
 
 class HUDView: NSView {
     var isCapsOn: Bool = false
-    
+
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        
-        let context = NSGraphicsContext.current?.cgContext
-        context?.saveGState()
-        
-        // Draw background squircle
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.saveGState()
+
         let bounds = self.bounds
-        let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 20, dy: 20), xRadius: 24, yRadius: 24)
-        
-        // Translucent dark background for the HUD itself
-        NSColor(white: 0.1, alpha: 0.85).setFill()
-        bgPath.fill()
-        
-        // Draw the inner "අක" box
-        let innerBoxSize = CGSize(width: 84, height: 60)
-        let innerBoxRect = NSRect(x: bounds.midX - innerBoxSize.width/2,
-                                  y: bounds.midY - innerBoxSize.height/2 + 15,
-                                  width: innerBoxSize.width,
-                                  height: innerBoxSize.height)
-        
-        let innerPath = NSBezierPath(roundedRect: innerBoxRect, xRadius: 10, yRadius: 10)
-        
-        // Highlighter Green #1BFC06
-        let highlightColor = NSColor(red: 27.0/255.0, green: 252.0/255.0, blue: 6.0/255.0, alpha: 1.0)
-        let normalColor = NSColor(white: 0.3, alpha: 1.0)
-        
-        if isCapsOn {
-            highlightColor.setFill()
-        } else {
-            normalColor.setFill()
-        }
-        innerPath.fill()
-        
-        // Draw the "අක" text
-        let text = "අක"
-        let font = NSFont(name: "Sinhala Sangam MN", size: 42) ?? NSFont.systemFont(ofSize: 42)
-        let attributes: [NSAttributedString.Key: Any] = [
+
+        // "අක" badge box
+        let boxW: CGFloat = 84, boxH: CGFloat = 60
+        let boxRect = NSRect(
+            x: bounds.midX - boxW / 2,
+            y: bounds.midY - boxH / 2 + 14,
+            width: boxW, height: boxH
+        )
+        let boxPath = NSBezierPath(roundedRect: boxRect, xRadius: 10, yRadius: 10)
+
+        // Highlighter Green #1BFC06 when ON, dark when OFF
+        let onColor  = NSColor(red: 0x34/255.0, green: 0xC7/255.0, blue: 0x59/255.0, alpha: 1)
+        let offColor = NSColor(white: 0.22, alpha: 1)
+        (isCapsOn ? onColor : offColor).setFill()
+        boxPath.fill()
+
+        // "අක" text
+        let font = NSFont(name: "Sinhala Sangam MN", size: 40) ?? NSFont.systemFont(ofSize: 40)
+        let labelAttrs: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: isCapsOn ? NSColor.black : NSColor.white
         ]
-        
-        let attrString = NSAttributedString(string: text, attributes: attributes)
-        let textSize = attrString.size()
-        let textRect = NSRect(x: bounds.midX - textSize.width/2,
-                              y: innerBoxRect.midY - textSize.height/2 + 2,
-                              width: textSize.width,
-                              height: textSize.height)
-        attrString.draw(in: textRect)
-        
-        // Draw "Caps Lock On" or "Caps Lock Off" text below
-        let statusText = isCapsOn ? "Caps Lock On" : "Caps Lock Off"
-        let statusFont = NSFont.systemFont(ofSize: 16, weight: .semibold)
-        let statusAttributes: [NSAttributedString.Key: Any] = [
-            .font: statusFont,
+        let label = NSAttributedString(string: "අක", attributes: labelAttrs)
+        let ls = label.size()
+        label.draw(at: NSPoint(x: bounds.midX - ls.width / 2,
+                               y: boxRect.midY - ls.height / 2))
+
+        // Status text
+        let statusAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 15, weight: .semibold),
             .foregroundColor: NSColor.white
         ]
-        
-        let statusAttrString = NSAttributedString(string: statusText, attributes: statusAttributes)
-        let statusSize = statusAttrString.size()
-        let statusRect = NSRect(x: bounds.midX - statusSize.width/2,
-                                y: bounds.minY + 45,
-                                width: statusSize.width,
-                                height: statusSize.height)
-        statusAttrString.draw(in: statusRect)
-        
-        context?.restoreGState()
+        let statusLabel = NSAttributedString(
+            string: isCapsOn ? "Caps Lock On" : "Caps Lock Off",
+            attributes: statusAttrs
+        )
+        let sl = statusLabel.size()
+        statusLabel.draw(at: NSPoint(x: bounds.midX - sl.width / 2, y: bounds.minY + 42))
+
+        ctx.restoreGState()
     }
 }

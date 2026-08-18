@@ -170,6 +170,7 @@
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
 @property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
 @property(nonatomic, assign) NSRange lastReportedRange;
+@property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
@@ -395,8 +396,22 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return NO;
 }
 
+- (BOOL)handleEvent:(NSEvent *)event client:(id)sender {
+  // Only intercept Caps Lock (NSEventTypeFlagsChanged). Never consume it - return NO
+  // so the system handles it normally. This is the safe IMK pattern.
+  if (event.type == NSEventTypeFlagsChanged) {
+    BOOL isCapsOn = (event.modifierFlags & NSEventModifierFlagCapsLock) != 0;
+    if (isCapsOn != _lastKnownCapsLockState) {
+      _lastKnownCapsLockState = isCapsOn;
+      [[AksharaCapsLockHUD shared] showWithCapsLockOn:isCapsOn];
+    }
+  }
+  return NO; // Always pass event through
+}
+
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
   if ((keyCode >= 123 && keyCode <= 126) || keyCode == 115 || keyCode == 119 || keyCode == 116 || keyCode == 121) {
+
     if (self.rawBuffer.length > 0) {
       [self commitComposition:sender];
     }
@@ -593,6 +608,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)activateServer:(id)sender {
   [super activateServer:sender];
+  // Seed initial caps lock state for HUD delta detection
+  _lastKnownCapsLockState = ([NSEvent modifierFlags] & NSEventModifierFlagCapsLock) != 0;
+  // Kick HUD singleton alive on main thread (safe, no polling)
+  dispatch_async(dispatch_get_main_queue(), ^{ (void)[AksharaCapsLockHUD shared]; });
   // Keyboard Viewer asks for the active input method's layout as soon as the
   // source is selected, before the first key event reaches inputText:.
   [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
