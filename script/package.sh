@@ -143,6 +143,18 @@ CONSOLE_USER="$(/usr/bin/stat -f%Su /dev/console)"
 if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
   CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
   /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open -n "$APP" >/dev/null 2>&1 || true
+
+  # The package installer runs as root, so present the restart prompt inside
+  # the logged-in user's GUI session after the update has finished copying.
+  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/osascript <<'APPLESCRIPT' >/dev/null 2>&1 &
+tell application "System Events"
+  activate
+  set response to display dialog "Akshara has been updated successfully. Restart your Mac to finish applying the update." buttons {"Later", "Restart Now"} default button "Restart Now" with title "Akshara Updated" with icon note
+  if button returned of response is "Restart Now" then
+    restart
+  end if
+end tell
+APPLESCRIPT
 fi
 
 exit 0
@@ -182,7 +194,7 @@ section "Building installer package"
 (
     # Input methods must stay in /Library/Input Methods.
     /usr/bin/pkgbuild --analyze --root "$PKG_ROOT" "$COMPONENT_PLIST"
-    /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENT_PLIST"
+    /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$COMPONENT_PLIST"
 
     /usr/bin/pkgbuild \
       --root "$PKG_ROOT" \
