@@ -409,8 +409,7 @@ SWIFT_CLASS("_TtC7Akshara20WelcomeWindowManager")
 @interface WelcomeWindowManager : NSObject <NSWindowDelegate>
 SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) WelcomeWindowManager * _Nonnull shared;)
 + (WelcomeWindowManager * _Nonnull)shared SWIFT_WARN_UNUSED_RESULT;
-/// The onboarding window is useful once after installation; subsequent
-/// input-method launches should stay invisible and lightweight.
+/// Show the welcome window whenever Akshara is launched.
 - (void)showWelcomeWindowIfNeeded;
 - (void)showWelcomeWindow;
 - (void)closeWelcomeWindow;

@@ -192,6 +192,7 @@ case "$MODE" in
     ;;
   --verify|verify)
     echo ""
+    "$ROOT/script/validate_install.sh"
     "$ROOT/script/install.sh" --no-build
     ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
     spin $! "Launching Akshara"
