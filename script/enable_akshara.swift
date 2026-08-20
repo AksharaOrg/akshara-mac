@@ -23,28 +23,12 @@ func inputSource(withID wantedID: String) -> TISInputSource? {
   return nil
 }
 
-let registerStatus = TISRegisterInputSource(appURL)
-if registerStatus != noErr {
-  fputs("TISRegisterInputSource failed: \(registerStatus)\n", stderr)
-  exit(1)
-}
-
-let phoneticID = "com.local.inputmethod.Akshara.Phonetic"
-let smartPhoneticID = "com.local.inputmethod.Akshara.SmartPhonetic"
-let wijesekaraID = "com.local.inputmethod.Akshara.SLS1134"
-let parentID = "com.local.inputmethod.Akshara"
-
-for inputSourceID in [parentID, phoneticID, smartPhoneticID, wijesekaraID] {
-  guard let source = inputSource(withID: inputSourceID) else {
-    fputs("Input source not found after registration: \(inputSourceID)\n", stderr)
-    exit(1)
-  }
-
-  let status = TISEnableInputSource(source)
-  if status != noErr {
-    fputs("TISEnableInputSource failed for \(inputSourceID): \(status)\n", stderr)
+if inputSource(withID: "com.local.inputmethod.Akshara") == nil {
+  let registerStatus = TISRegisterInputSource(appURL)
+  if registerStatus != noErr {
+    fputs("TISRegisterInputSource failed: \(registerStatus)\n", stderr)
     exit(1)
   }
 }
 
-print("Enabled Akshara input sources")
+print("Registered Akshara input sources")

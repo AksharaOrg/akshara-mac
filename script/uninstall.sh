@@ -4,6 +4,7 @@ set -euo pipefail
 APP_NAME="Akshara.app"
 APP_PROCESS="Akshara"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_APP="$HOME/Library/Input Methods/$APP_NAME"
 SYSTEM_APP="/Library/Input Methods/$APP_NAME"
 
@@ -39,6 +40,7 @@ case "${1:-}" in
   *) usage >&2; exit 2 ;;
 esac
 
+/usr/bin/swift "$SCRIPT_DIR/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
 remove_app "$USER_APP" no
 if [[ "$remove_system" == true ]]; then
   remove_app "$SYSTEM_APP" yes

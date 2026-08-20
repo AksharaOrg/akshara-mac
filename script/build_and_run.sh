@@ -1,19 +1,3 @@
-#!/bin/bash
-
-# කෝඩ් එකේ මොකක් හරි එරර් එකක් ආවොත් ස්ක්‍රිප්ට් එක නවතින්න
-set -e 
-
-echo "🧹 1. පරණ වර්ෂන් එක Uninstall කරමින්..."
-sh ./script/uninstall.sh
-
-echo "🗑️ 2. Keyboard Cache (HIToolbox) මකා දමමින්..."
-rm -f ~/Library/Preferences/com.apple.HIToolbox.plist
-
-echo "🔄 3. System UI Server එක Restart කරමින්..."
-killall SystemUIServer || true
-
-echo "🔨 4. අලුත් කීබෝර්ඩ් එක Build කරමින්..."
-
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -221,9 +205,9 @@ esac
 
 echo "✅ Build සහ Install කිරීම සාර්ථකයි!"
 
-#echo "⚠️ 5. තත්පර 5කින් Mac එක Force Restart වෙනවා..."
-#echo "කරුණාකර වැඩ කරමින් සිටි ෆයිල්ස් Save කරන්න!"
-#sleep 5
+echo "⚠️ 5. තත්පර 5කින් Mac එක Force Restart වෙනවා..."
+echo "කරුණාකර වැඩ කරමින් සිටි ෆයිල්ස් Save කරන්න!"
+sleep 5
 
 # Mac එක Force Restart කිරීම
-#sudo shutdown -r now
+sudo shutdown -r now

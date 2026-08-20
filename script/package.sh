@@ -125,24 +125,9 @@ cat >"$PKG_SCRIPTS/postinstall" <<'SCRIPT'
 set -eu
 
 APP="/Library/Input Methods/Akshara.app"
-LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-CONSOLE_USER=$(stat -f %Su /dev/console)
 
 if [ -d "$APP" ]; then
   /usr/bin/xattr -cr "$APP" 2>/dev/null || true
-
-  # Unregister ALL known instances of Akshara for the console user to prevent duplicates in System Settings
-  if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
-      sudo -u "$CONSOLE_USER" "$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" | sed 's/path:[ 	]*//' | sed 's/ (.*//' | sort | uniq | while read app_path; do
-          if [ "$app_path" != "$APP" ]; then
-              sudo -u "$CONSOLE_USER" "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
-          fi
-      done
-      sudo -u "$CONSOLE_USER" "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
-  fi
-
-  # Also register it system-wide (for root/login screen)
-  "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
 fi
 
 /usr/bin/killall Akshara >/dev/null 2>&1 || true
