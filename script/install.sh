@@ -64,7 +64,7 @@ fi
 section "Cleaning up duplicates"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 (
-    "$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort -u | while read app_path; do
+    ("$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" || true) | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort -u | while read app_path; do
         if [ "$app_path" != "$DST" ]; then
             "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
         fi
