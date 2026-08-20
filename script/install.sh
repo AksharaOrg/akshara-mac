@@ -13,6 +13,34 @@ LEGACY_DST="$DST_DIR/$LEGACY_APP_NAME"
 SYSTEM_DST="/Library/Input Methods/$APP_NAME"
 CLEANUP_VERSION="0.1.22"
 
+version_at_least() {
+    local current="$1"
+    local required="$2"
+
+    [[ -n "$current" ]] || return 1
+    [[ -n "$required" ]] || return 0
+
+    local current_parts required_parts
+    IFS='.' read -r -a current_parts <<< "$current"
+    IFS='.' read -r -a required_parts <<< "$required"
+
+    local max_len=$(( ${#current_parts[@]} > ${#required_parts[@]} ? ${#current_parts[@]} : ${#required_parts[@]} ))
+    local i
+    for (( i=0; i<max_len; i++ )); do
+        local current_part="${current_parts[$i]:-0}"
+        local required_part="${required_parts[$i]:-0}"
+
+        if (( 10#$current_part > 10#$required_part )); then
+            return 0
+        fi
+        if (( 10#$current_part < 10#$required_part )); then
+            return 1
+        fi
+    done
+
+    return 0
+}
+
 # ── Design System (CI-safe) ──────────────────────────────────────────────────
 if [ -t 1 ]; then
     GREEN='\033[32m'; CYAN='\033[36m'; RED='\033[31m'
@@ -67,7 +95,7 @@ section "Cleaning up duplicates"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 (
     INSTALLED_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$SRC/Contents/Info.plist" 2>/dev/null || true)
-    if [[ "$INSTALLED_VERSION" == "$CLEANUP_VERSION" ]]; then
+    if version_at_least "$INSTALLED_VERSION" "$CLEANUP_VERSION"; then
         /usr/bin/swift "$ROOT/script/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
     fi
     ("$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" || true) | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort -u | while read app_path; do

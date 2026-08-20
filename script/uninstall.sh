@@ -46,6 +46,11 @@ if [[ "$remove_system" == true ]]; then
   remove_app "$SYSTEM_APP" yes
 fi
 
+# Clear any stale Akshara / CleanIME entries before confirming removal.
+if defaults read "com.apple.HIToolbox" "AppleEnabledInputSources" >/dev/null 2>&1; then
+  /usr/bin/swift "$SCRIPT_DIR/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
+fi
+
 /usr/bin/killall "$APP_PROCESS" >/dev/null 2>&1 || true
 /usr/bin/killall TextInputMenuAgent >/dev/null 2>&1 || true
 /usr/bin/killall cfprefsd >/dev/null 2>&1 || true
