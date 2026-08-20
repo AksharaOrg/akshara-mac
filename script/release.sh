@@ -81,6 +81,24 @@ fetch_github_api() {
 
 handle_create() {
     echo ""
+    local TEMP_LATEST=$(mktemp)
+    
+    ( fetch_github_api "releases/latest" | jq -r '.tag_name // empty' > "$TEMP_LATEST" ) &
+    spin $! "Fetching latest GitHub release..."
+    
+    local LATEST_GH=$(cat "$TEMP_LATEST")
+    rm -f "$TEMP_LATEST"
+    
+    if [ -z "$LATEST_GH" ]; then
+        LATEST_GH="None"
+    fi
+    
+    local LATEST_LOCAL=$(git describe --tags --abbrev=0 2>/dev/null || echo "None")
+    
+    echo -e "${DIM}Latest GitHub release: ${LATEST_GH}${RESET}"
+    echo -e "${DIM}Latest local tag:      ${LATEST_LOCAL}${RESET}"
+    echo ""
+    
     read -p "Enter the new release version (e.g. v0.1.14): " VERSION
     if [ -z "$VERSION" ]; then
         echo -e "${RED}✖${RESET} Version cannot be empty."
@@ -122,7 +140,7 @@ handle_abandoned() {
     local TEMP_RELEASES=$(mktemp)
     local TEMP_TAGS=$(mktemp)
     
-    ( fetch_github_api "repos/AksharaOrg/akshara-mac/releases" | jq -r '.[] | select(any(.assets[]; .name | endswith(".pkg"))) | .tag_name' > "$TEMP_RELEASES" ) &
+    ( fetch_github_api "releases" | jq -r 'if type == "array" then .[] | select(any(.assets[]; .name | endswith(".pkg"))) | .tag_name else empty end' > "$TEMP_RELEASES" ) &
     spin $! "Fetching tags with .pkg releases..."
     
     ( git ls-remote --tags upstream | awk '{print $2}' | grep -v '\^{}' | sed 's/refs\/tags\///' > "$TEMP_TAGS" ) &
@@ -147,40 +165,121 @@ handle_abandoned() {
 }
 
 handle_delete() {
-    echo ""
-    read -p "Enter tag to delete (e.g. v0.1.14): " TAG
-    if [ -z "$TAG" ]; then
-        return
-    fi
+    local TEMP_LATEST=$(mktemp)
+    ( fetch_github_api "releases/latest" | jq -r '.tag_name // empty' > "$TEMP_LATEST" ) &
+    spin $! "Fetching latest GitHub release..."
+    local LATEST_GH=$(cat "$TEMP_LATEST")
+    rm -f "$TEMP_LATEST"
+    if [ -z "$LATEST_GH" ]; then LATEST_GH="None"; fi
+    local LATEST_LOCAL=$(git describe --tags --abbrev=0 2>/dev/null || echo "None")
+
+    local TEMP_TAGS=$(mktemp)
+    ( git fetch upstream --tags >/dev/null 2>&1 || true; git tag -l --sort=-v:refname > "$TEMP_TAGS" ) &
+    spin $! "Fetching all local and remote tags..."
     
-    echo -e "\n${RED}WARNING: You are about to delete tag '$TAG'.${RESET}"
-    read -p "Are you sure? [y/N]: " confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        echo "Aborted."
+    local TAGS=()
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            TAGS+=("$line")
+        fi
+    done < "$TEMP_TAGS"
+    rm -f "$TEMP_TAGS"
+    
+    if [ ${#TAGS[@]} -eq 0 ]; then
+        echo -e "\n${RED}No local tags found.${RESET}"
         read -n 1 -s -r -p "Press any key to continue..."
         return
     fi
     
-    echo ""
-    # Local delete
-    if git show-ref --tags --verify --quiet "refs/tags/$TAG"; then
-        ( git tag -d "$TAG" >/dev/null ) &
-        spin $! "Deleting local tag $TAG"
-    else
-        echo -e "${DIM}Local tag not found, skipping.${RESET}"
-    fi
+    local SELECTED_IDX=0
+    local PAGE_SIZE=10
     
-    # Remote delete
-    git ls-remote --exit-code --tags upstream "refs/tags/$TAG" >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        ( git push upstream --delete "$TAG" >/dev/null 2>&1 ) &
-        spin $! "Deleting upstream tag $TAG"
-    else
-        echo -e "${DIM}Remote tag not found, skipping.${RESET}"
-    fi
-    
-    echo -e "\n${GREEN}✔ Deletion complete.${RESET}"
-    read -n 1 -s -r -p "Press any key to continue..."
+    while true; do
+        clear
+        print_header
+        echo -e "${DIM}Latest GitHub release: ${LATEST_GH}${RESET}"
+        echo -e "${DIM}Latest local tag:      ${LATEST_LOCAL}${RESET}"
+        echo ""
+        echo -e "${YELLOW}Select a tag to delete:${RESET}"
+        
+        local TOTAL_TAGS=${#TAGS[@]}
+        local CURRENT_PAGE=$(( SELECTED_IDX / PAGE_SIZE ))
+        local START_IDX=$(( CURRENT_PAGE * PAGE_SIZE ))
+        local END_IDX=$(( START_IDX + PAGE_SIZE ))
+        if [ $END_IDX -gt $TOTAL_TAGS ]; then
+            END_IDX=$TOTAL_TAGS
+        fi
+        
+        local TOTAL_PAGES=$(( (TOTAL_TAGS + PAGE_SIZE - 1) / PAGE_SIZE ))
+        
+        for (( i=START_IDX; i<END_IDX; i++ )); do
+            if [ $i -eq $SELECTED_IDX ]; then
+                printf "${CYAN}> %-20s${RESET}\n" "${TAGS[$i]}"
+            else
+                printf "  %-20s\n" "${TAGS[$i]}"
+            fi
+        done
+        
+        echo ""
+        echo -e "${DIM}Page $((CURRENT_PAGE + 1)) of $TOTAL_PAGES | ↑/↓ to navigate | Enter to select | Q to cancel${RESET}"
+        
+        read -rsn1 key
+        case "$key" in
+            $'\e')
+                read -rsn2 key2
+                case "$key2" in
+                    '[A')
+                        if [ $SELECTED_IDX -gt 0 ]; then
+                            SELECTED_IDX=$((SELECTED_IDX - 1))
+                        fi
+                        ;;
+                    '[B')
+                        if [ $SELECTED_IDX -lt $((TOTAL_TAGS - 1)) ]; then
+                            SELECTED_IDX=$((SELECTED_IDX + 1))
+                        fi
+                        ;;
+                esac
+                ;;
+            "") # Enter
+                local TAG="${TAGS[$SELECTED_IDX]}"
+                tput cnorm
+                echo -e "\n${RED}WARNING: You are about to delete tag '$TAG'.${RESET}"
+                read -p "Are you sure? [y/N]: " confirm
+                if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+                    echo "Aborted."
+                    tput civis
+                    read -n 1 -s -r -p "Press any key to continue..."
+                    return
+                fi
+                
+                echo ""
+                # Local delete
+                if git show-ref --tags --verify --quiet "refs/tags/$TAG"; then
+                    ( git tag -d "$TAG" >/dev/null ) &
+                    spin $! "Deleting local tag $TAG"
+                else
+                    echo -e "${DIM}Local tag not found, skipping.${RESET}"
+                fi
+                
+                # Remote delete
+                git ls-remote --exit-code --tags upstream "refs/tags/$TAG" >/dev/null 2>&1
+                if [ $? -eq 0 ]; then
+                    ( git push upstream --delete "$TAG" >/dev/null 2>&1 ) &
+                    spin $! "Deleting upstream tag $TAG"
+                else
+                    echo -e "${DIM}Remote tag not found, skipping.${RESET}"
+                fi
+                
+                echo -e "\n${GREEN}✔ Deletion complete.${RESET}"
+                tput civis
+                read -n 1 -s -r -p "Press any key to continue..."
+                return
+                ;;
+            q|Q)
+                return
+                ;;
+        esac
+    done
 }
 
 # Ensure upstream is added
