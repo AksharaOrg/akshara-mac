@@ -431,14 +431,36 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 - (BOOL)showVerifiedInstallConfirmation:(NSString *)signerInfo
                                 version:(NSString *)version
                                fileSize:(unsigned long long)fileSize {
+    (void)signerInfo;
     double sizeMB = fileSize / (1024.0 * 1024.0);
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = [NSString stringWithFormat:@"Install Akshara %@?", version];
-    alert.informativeText = [NSString stringWithFormat:
-        @"✓ Verified: %@\n\nVersion: %@  |  Size: %.1f MB\n\n"
-         "Akshara Installer will open for you to authorize the update.",
-        signerInfo ?: [NSString stringWithFormat:@"%@ (%@)", kExpectedCertPrefix, kExpectedTeamID],
+    NSString *details = [NSString stringWithFormat:
+        @"✓ Verified v%@ (%.1f MB)\n\n"
+         "Akshara Installer will open for you\n"
+         "to authorize the update.",
         version, sizeMB];
+    NSMutableAttributedString *attributedDetails =
+        [[NSMutableAttributedString alloc] initWithString:details];
+    NSRange verifiedRange = [details rangeOfString:@"✓ Verified"];
+    if (verifiedRange.location != NSNotFound) {
+        [attributedDetails addAttributes:@{
+            NSFontAttributeName: [NSFont boldSystemFontOfSize:NSFont.systemFontSize],
+            NSForegroundColorAttributeName: NSColor.labelColor
+        } range:verifiedRange];
+    }
+    NSTextField *detailsLabel = [NSTextField labelWithString:@""];
+    detailsLabel.attributedStringValue = attributedDetails;
+    detailsLabel.editable = NO;
+    detailsLabel.selectable = NO;
+    detailsLabel.bezeled = NO;
+    detailsLabel.drawsBackground = NO;
+    detailsLabel.maximumNumberOfLines = 0;
+    detailsLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    detailsLabel.frame = NSMakeRect(0, 0, 420, 0);
+    [detailsLabel sizeToFit];
+    alert.informativeText = @"";
+    alert.accessoryView = detailsLabel;
     [alert addButtonWithTitle:@"Install"];
     [alert addButtonWithTitle:@"Cancel"];
     return ([alert runModal] == NSAlertFirstButtonReturn);
