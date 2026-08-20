@@ -100,6 +100,7 @@ section "Compiling ${ARCH_MODE} Binary"
 
         swiftc \
           -target $SWIFT_TARGET \
+          -O \
           -emit-object \
           -wmo \
           -module-name Akshara \
@@ -116,6 +117,7 @@ section "Compiling ${ARCH_MODE} Binary"
 
         clang \
           -arch $ARCH \
+          -O2 \
           -fobjc-arc \
           -fmodules \
           -fmodules-cache-path="$MODULE_CACHE" \

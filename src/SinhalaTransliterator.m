@@ -8,6 +8,71 @@ static NSString * const SLSTokenSanyakaya = @"\uE003";
 static NSString * const SLSTokenRakaransaya = @"\uE004";
 static NSString * const SLSTokenYansaya = @"\uE005";
 
+@interface AksharaKeyTrieNode : NSObject
+@property(nonatomic, strong) NSMutableDictionary<NSString *, AksharaKeyTrieNode *> *children;
+@property(nonatomic, copy) NSString *terminalKey;
+@end
+
+@implementation AksharaKeyTrieNode
+- (instancetype)init {
+  self = [super init];
+  if (self) {
+    _children = [NSMutableDictionary dictionary];
+  }
+  return self;
+}
+@end
+
+static AksharaKeyTrieNode *AksharaTrieForKeys(NSArray<NSString *> *keys) {
+  static NSMapTable<NSArray<NSString *> *, AksharaKeyTrieNode *> *tries;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    tries = [NSMapTable strongToStrongObjectsMapTable];
+  });
+
+  @synchronized (tries) {
+    AksharaKeyTrieNode *root = [tries objectForKey:keys];
+    if (root) {
+      return root;
+    }
+
+    root = [[AksharaKeyTrieNode alloc] init];
+    for (NSString *key in keys) {
+      AksharaKeyTrieNode *node = root;
+      for (NSUInteger index = 0; index < key.length; index++) {
+        NSString *character = [key substringWithRange:NSMakeRange(index, 1)];
+        AksharaKeyTrieNode *child = node.children[character];
+        if (!child) {
+          child = [[AksharaKeyTrieNode alloc] init];
+          node.children[character] = child;
+        }
+        node = child;
+      }
+      node.terminalKey = key;
+    }
+    [tries setObject:root forKey:keys];
+    return root;
+  }
+}
+
+static NSArray<NSString *> *AksharaSmartNasalKeys(void) {
+  static NSArray<NSString *> *keys;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keys = @[@"zn"];
+  });
+  return keys;
+}
+
+static NSArray<NSString *> *AksharaSmartSanyakaKeys(void) {
+  static NSArray<NSString *> *keys;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keys = @[@"zg", @"zj", @"zd", @"zdh", @"zq", @"zk", @"zh"];
+  });
+  return keys;
+}
+
 @implementation SinhalaTransliterator
 
 + (NSDictionary<NSString *, NSString *> *)consonants {
@@ -157,13 +222,19 @@ static NSString * const SLSTokenYansaya = @"\uE005";
 }
 
 + (NSString *)matchFrom:(NSString *)input at:(NSUInteger)index keys:(NSArray<NSString *> *)keys {
-  for (NSString *key in keys) {
-    if (index + key.length <= input.length &&
-        [[input substringWithRange:NSMakeRange(index, key.length)] isEqualToString:key]) {
-      return key;
+  AksharaKeyTrieNode *node = AksharaTrieForKeys(keys);
+  NSString *longestMatch = nil;
+  for (NSUInteger offset = index; offset < input.length; offset++) {
+    NSString *character = [input substringWithRange:NSMakeRange(offset, 1)];
+    node = node.children[character];
+    if (!node) {
+      break;
+    }
+    if (node.terminalKey) {
+      longestMatch = node.terminalKey;
     }
   }
-  return nil;
+  return longestMatch;
 }
 
 + (NSString *)transliteratePhonetic:(NSString *)input {
@@ -249,13 +320,13 @@ static NSString * const SLSTokenYansaya = @"\uE005";
       i++;
       continue;
     }
-    if ([self matchFrom:input at:i keys:@[@"zn"]]) {
+    if ([self matchFrom:input at:i keys:AksharaSmartNasalKeys()]) {
       [out appendString:@"ං"];
       i += 2;
       continue;
     }
     if ([ch isEqualToString:@"z"]) {
-      NSString *sanyakaKey = [self matchFrom:input at:i keys:@[@"zg", @"zj", @"zd", @"zdh", @"zq", @"zk", @"zh"]];
+      NSString *sanyakaKey = [self matchFrom:input at:i keys:AksharaSmartSanyakaKeys()];
       if (!sanyakaKey) {
         i++;
         continue;
