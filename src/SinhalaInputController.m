@@ -192,6 +192,10 @@
   return self;
 }
 
+- (NSUInteger)recognizedEvents:(id)sender {
+    return NSEventMaskKeyDown | NSEventMaskFlagsChanged;
+}
+
 typedef NS_ENUM(NSInteger, AksharaInputMode) {
   AksharaInputModeWijesekara,
   AksharaInputModePhonetic,
