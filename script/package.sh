@@ -53,6 +53,14 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
 
 if [ -d "$APP" ]; then
   /usr/bin/xattr -cr "$APP" 2>/dev/null || true
+  
+  # Unregister ALL known instances of Akshara to prevent duplicates in System Settings
+  "$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" | sed 's/path:[ \t]*//' | sort | uniq | while read app_path; do
+      if [ "$app_path" != "$APP" ]; then
+          "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
+      fi
+  done
+
   "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
 fi
 

@@ -19,8 +19,16 @@ elif [[ ! -d "$SRC" ]]; then
 fi
 
 mkdir -p "$DST_DIR"
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$DST" >/dev/null 2>&1 || true
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$LEGACY_DST" >/dev/null 2>&1 || true
+
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+# Unregister ALL known instances of Akshara to prevent duplicates in System Settings
+"$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" | sed 's/path:[ \t]*//' | sort | uniq | while read app_path; do
+    if [ "$app_path" != "$DST" ]; then
+        "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
+    fi
+done
+
+"$LSREGISTER" -u "$LEGACY_DST" >/dev/null 2>&1 || true
 rm -rf "$DST"
 rm -rf "$LEGACY_DST"
 cp -R "$SRC" "$DST"
