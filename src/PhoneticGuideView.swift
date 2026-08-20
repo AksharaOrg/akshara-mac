@@ -331,6 +331,18 @@ struct GuideSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var cardBackground: Color {
+        colorScheme == .dark
+            ? Color(NSColor.controlBackgroundColor).opacity(0.55)
+            : Color(NSColor.controlBackgroundColor).opacity(0.85)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.08)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(title)
@@ -339,7 +351,14 @@ struct GuideSection<Content: View>: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(cardBackground)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: 1)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
@@ -354,6 +373,17 @@ struct CollapsibleGuideSection<Content: View>: View {
     @ViewBuilder let content: Content
 
     @StateObject private var expandState = ExpandState()
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var cardBackground: Color {
+        colorScheme == .dark
+            ? Color(NSColor.controlBackgroundColor).opacity(0.55)
+            : Color(NSColor.controlBackgroundColor).opacity(0.85)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.08)
+    }
 
     var body: some View {
         DisclosureGroup(
@@ -379,7 +409,14 @@ struct CollapsibleGuideSection<Content: View>: View {
             }
         )
         .padding(16)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(cardBackground)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: 1)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
