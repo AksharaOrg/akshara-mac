@@ -221,9 +221,9 @@ esac
 
 echo "✅ Build සහ Install කිරීම සාර්ථකයි!"
 
-#echo "⚠️ 5. තත්පර 5කින් Mac එක Force Restart වෙනවා..."
-#echo "කරුණාකර වැඩ කරමින් සිටි ෆයිල්ස් Save කරන්න!"
-#sleep 5
+echo "⚠️ 5. තත්පර 5කින් Mac එක Force Restart වෙනවා..."
+echo "කරුණාකර වැඩ කරමින් සිටි ෆයිල්ස් Save කරන්න!"
+sleep 5
 
 # Mac එක Force Restart කිරීම
-#sudo shutdown -r now
+sudo shutdown -r now
