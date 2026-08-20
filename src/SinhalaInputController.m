@@ -839,14 +839,15 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   if ([oldString isEqualToString:newString]) {
     return;
   }
-  
+
+  BOOL isSimpleAppend = [newString hasPrefix:oldString];
   NSUInteger graphemesToDelete = 0;
   NSUInteger unicharsToDelete = 0;
   NSMutableString *inserts = [NSMutableString string];
 
   // Appending a suffix is the common typing path. It cannot change the
   // existing marked text prefix, so avoid rebuilding both grapheme arrays.
-  if ([newString hasPrefix:oldString]) {
+  if (isSimpleAppend) {
     [inserts appendString:[newString substringFromIndex:oldString.length]];
   } else {
     NSMutableArray<NSString *> *oldGraphemes = [NSMutableArray array];
@@ -888,6 +889,14 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     for (NSUInteger i = commonCount; i < oldGraphemes.count; i++) {
       unicharsToDelete += [oldGraphemes[i] length];
     }
+  }
+
+  if (isSimpleAppend && inserts.length > 0) {
+    [client insertText:inserts replacementRange:NSMakeRange(NSNotFound, 0)];
+    self.lastCommittedString = newString;
+    self.expectedCursorLocation = NSNotFound;
+    self.expectedCursorLocationGraphemes = NSNotFound;
+    return;
   }
   
   if (unicharsToDelete > 0 || inserts.length > 0) {
