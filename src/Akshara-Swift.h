@@ -411,6 +411,7 @@ SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) WelcomeWindo
 + (WelcomeWindowManager * _Nonnull)shared SWIFT_WARN_UNUSED_RESULT;
 /// Show the welcome window whenever Akshara is launched.
 - (void)showWelcomeWindowIfNeeded;
+- (void)markInputMethodActivated;
 - (void)showWelcomeWindow;
 - (void)closeWelcomeWindow;
 - (void)showPhoneticGuideWithSmartMode:(BOOL)isSmart;

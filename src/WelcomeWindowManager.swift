@@ -6,6 +6,7 @@ import SwiftUI
 
     private var window: NSWindow?
     private var phoneticGuideWindow: NSWindow?
+    private var inputMethodWasActivated = false
 
     private func ensureVisibleAppActivation() {
         if NSApp.activationPolicy() != .regular {
@@ -22,7 +23,12 @@ import SwiftUI
 
     /// Show the welcome window whenever Akshara is launched.
     @objc public func showWelcomeWindowIfNeeded() {
+        guard !inputMethodWasActivated else { return }
         showWelcomeWindow()
+    }
+
+    @objc public func markInputMethodActivated() {
+        inputMethodWasActivated = true
     }
 
     @objc public func showWelcomeWindow() {

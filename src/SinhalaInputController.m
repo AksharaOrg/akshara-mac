@@ -664,6 +664,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)activateServer:(id)sender {
   [super activateServer:sender];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [WelcomeWindowManager.shared markInputMethodActivated];
+  });
   self.hasCachedInputMode = NO;
   self.hasAppliedKeyboardLayoutMode = NO;
   // Seed initial caps lock state for HUD delta detection
