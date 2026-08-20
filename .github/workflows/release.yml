@@ -16,6 +16,22 @@ jobs:
     steps:
       - name: Check out the release tag
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      # Only allow releases from commits that are on the main branch.
+      # This prevents a tag pushed to an unreviewed commit from triggering
+      # the signing workflow and publishing a release.
+      - name: Verify tag commit is on main branch
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=100
+          TAG_COMMIT=$(git rev-parse HEAD)
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "::error::Tagged commit $TAG_COMMIT is not on main. Aborting release."
+            exit 1
+          fi
+          echo "Branch check passed: $TAG_COMMIT is on main."
 
       - name: Import Apple signing certificates
         env:

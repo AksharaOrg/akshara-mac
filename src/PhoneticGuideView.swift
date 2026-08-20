@@ -331,6 +331,18 @@ struct GuideSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var cardBackground: Color {
+        colorScheme == .dark
+            ? Color(NSColor.controlBackgroundColor).opacity(0.55)
+            : Color(white: 0.93)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.12)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(title)
@@ -339,8 +351,16 @@ struct GuideSection<Content: View>: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(cardBackground)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: 1)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: colorScheme == .dark ? .clear : Color.black.opacity(0.07), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -354,33 +374,63 @@ struct CollapsibleGuideSection<Content: View>: View {
     @ViewBuilder let content: Content
 
     @StateObject private var expandState = ExpandState()
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var cardBackground: Color {
+        colorScheme == .dark
+            ? Color(NSColor.controlBackgroundColor).opacity(0.55)
+            : Color(white: 0.93)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.12)
+    }
 
     var body: some View {
-        DisclosureGroup(
-            isExpanded: Binding(
-                get: { expandState.isExpanded },
-                set: { newValue in
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        expandState.isExpanded = newValue
-                    }
-                }
-            ),
-            content: {
-                VStack(alignment: .leading, spacing: 14) {
-                    Divider().padding(.vertical, 4)
-                    content
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            },
-            label: {
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+        Button(action: {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                expandState.isExpanded.toggle()
             }
-        )
-        .padding(16)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        }) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header — always visible
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(expandState.isExpanded ? 90 : 0))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: expandState.isExpanded)
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+
+                // Expandable content
+                if expandState.isExpanded {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Divider().padding(.vertical, 4)
+                        content
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(cardBackground)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: 1)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: colorScheme == .dark ? .clear : Color.black.opacity(0.07), radius: 4, x: 0, y: 2)
     }
 }
 

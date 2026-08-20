@@ -2,13 +2,26 @@
 #import <UserNotifications/UserNotifications.h>
 #import <AppKit/AppKit.h>
 
+// Team ID and cert prefix used to verify downloaded packages before opening.
+static NSString * const kExpectedTeamID     = @"8292UX7379";
+static NSString * const kExpectedCertPrefix = @"Developer ID Installer:";
+// Only accept download URLs from known GitHub-owned hosts.
+static NSArray<NSString *> *allowedAssetHosts(void) {
+    return @[@"objects.githubusercontent.com",
+             @"github.com",
+             @"github-releases.githubusercontent.com"];
+}
+
 @interface AutoUpdater () <UNUserNotificationCenterDelegate>
 @property (nonatomic, strong) NSString *downloadUrl;
 @property (nonatomic, strong) NSString *availableVersion;
 @property (nonatomic, strong) NSURLSessionDownloadTask *downloadTask;
+// Tracks the per-download staging directory so it can be cleaned up on cancel or failure.
+@property (nonatomic, strong) NSString *stagingDirectory;
 @end
 
 @implementation AutoUpdater
+
 
 + (instancetype)sharedUpdater {
     static AutoUpdater *sharedUpdater = nil;
@@ -54,21 +67,40 @@
     [self checkForUpdatesWithManualFlag:NO];
 }
 
+
+// Returns YES if the URL uses HTTPS and its host is one of the known GitHub asset hosts.
+- (BOOL)isAllowedURL:(NSURL *)url {
+    if (!url) return NO;
+    if (![url.scheme isEqualToString:@"https"]) return NO;
+    NSString *host = url.host;
+    if (!host) return NO;
+    for (NSString *allowed in allowedAssetHosts()) {
+        if ([host isEqualToString:allowed] ||
+            [host hasSuffix:[@"." stringByAppendingString:allowed]]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (void)checkForUpdatesWithManualFlag:(BOOL)isManual {
-    
-    NSURL *url = [NSURL URLWithString:@"https://api.github.com/repos/AksharaOrg/akshara-mac/releases/latest"];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+    NSURL *apiURL = [NSURL URLWithString:@"https://api.github.com/repos/AksharaOrg/akshara-mac/releases/latest"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:apiURL
+                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                       timeoutInterval:30];
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (error || !data || httpResponse.statusCode != 200) {
-            if (isManual) {
-                [self showManualCheckError];
-            }
+            if (isManual) { [self showManualCheckError]; }
             return;
         }
-        
+        // Guard against redirects to unexpected hosts.
+        if (![self isAllowedURL:httpResponse.URL]) {
+            if (isManual) { [self showManualCheckError]; }
+            return;
+        }
+
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         if (![json isKindOfClass:[NSDictionary class]]) {
             if (isManual) {
@@ -78,10 +110,8 @@
         }
         
         NSString *tagName = json[@"tag_name"];
-        if (!tagName) {
-            if (isManual) {
-                [self showManualCheckError];
-            }
+        if (![tagName isKindOfClass:[NSString class]] || tagName.length == 0) {
+            if (isManual) { [self showManualCheckError]; }
             return;
         }
         
@@ -99,11 +129,24 @@
         
         if ([tagName compare:currentVersion options:NSNumericSearch] == NSOrderedDescending) {
             NSArray *assets = json[@"assets"];
+            if (![assets isKindOfClass:[NSArray class]]) {
+                if (isManual) { [self showManualCheckError]; }
+                return;
+            }
             NSString *pkgUrl = nil;
+            // Match the exact versioned filename rather than accepting any .pkg asset.
+            NSString *expectedName = [NSString stringWithFormat:@"Akshara-v%@.pkg", tagName];
             for (NSDictionary *asset in assets) {
+                if (![asset isKindOfClass:[NSDictionary class]]) continue;
                 NSString *name = asset[@"name"];
-                if ([name hasSuffix:@".pkg"]) {
-                    pkgUrl = asset[@"browser_download_url"];
+                if ([name isKindOfClass:[NSString class]] && [name isEqualToString:expectedName]) {
+                    NSString *candidate = asset[@"browser_download_url"];
+                    if (![candidate isKindOfClass:[NSString class]]) break;
+                    // Validate the download URL host before storing.
+                    NSURL *candidateURL = [NSURL URLWithString:candidate];
+                    if ([self isAllowedURL:candidateURL]) {
+                        pkgUrl = candidate;
+                    }
                     break;
                 }
             }
@@ -207,34 +250,177 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 }
 
 - (void)downloadAndInstallUpdate {
-    if (!self.downloadUrl) return;
-    
+    if (!self.downloadUrl || !self.availableVersion) return;
+
+    // Re-validate the URL right before starting the download.
+    NSURL *url = [NSURL URLWithString:self.downloadUrl];
+    if (![self isAllowedURL:url]) {
+        NSLog(@"[AutoUpdater] Rejected disallowed download URL: %@", url);
+        return;
+    }
+
+    NSString *expectedVersion = self.availableVersion;
+
     UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
     content.title = @"Downloading Update";
     content.body = @"Akshara is downloading the latest update. It will open automatically when ready.";
     content.sound = [UNNotificationSound defaultSound];
-    UNNotificationRequest *req = [UNNotificationRequest requestWithIdentifier:@"AksharaDownloading" content:content trigger:nil];
-    [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:req withCompletionHandler:nil];
-    
-    NSURL *url = [NSURL URLWithString:self.downloadUrl];
-    NSURLSessionDownloadTask *downloadTask = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
-        (void)response;
-        if (error || !location) return;
-        
-        NSString *tempDir = NSTemporaryDirectory();
-        NSString *destPath = [tempDir stringByAppendingPathComponent:@"Akshara-Update.pkg"];
-        NSURL *destURL = [NSURL fileURLWithPath:destPath];
-        
+    [[UNUserNotificationCenter currentNotificationCenter]
+        addNotificationRequest:[UNNotificationRequest requestWithIdentifier:@"AksharaDownloading"
+                                                                    content:content trigger:nil]
+             withCompletionHandler:nil];
+
+    // Use a randomly-named private staging directory (mode 0700) so the download
+    // path is not predictable by other processes running as the same user.
+    NSString *uuid = [[NSUUID UUID] UUIDString];
+    NSString *stagingDir = [NSTemporaryDirectory() stringByAppendingPathComponent:uuid];
+    NSError *mkdirError = nil;
+    [[NSFileManager defaultManager] createDirectoryAtPath:stagingDir
+                                withIntermediateDirectories:YES
+                                               attributes:@{NSFilePosixPermissions: @(0700)}
+                                                    error:&mkdirError];
+    if (mkdirError) {
+        NSLog(@"[AutoUpdater] Failed to create staging directory: %@", mkdirError);
+        return;
+    }
+    self.stagingDirectory = stagingDir;
+
+    NSString *pkgName  = [NSString stringWithFormat:@"Akshara-v%@.pkg", expectedVersion];
+    NSString *destPath = [stagingDir stringByAppendingPathComponent:pkgName];
+    NSURL    *destURL  = [NSURL fileURLWithPath:destPath];
+
+    NSURLSessionDownloadTask *downloadTask = [[NSURLSession sharedSession]
+        downloadTaskWithURL:url
+          completionHandler:^(NSURL *location, NSURLResponse *response, NSError *dlError) {
+
+        if (dlError || !location) {
+            NSLog(@"[AutoUpdater] Download failed: %@", dlError);
+            [self cleanupStagingDirectory:stagingDir];
+            return;
+        }
+
+        // Check that we weren't redirected to an unexpected host.
+        NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)response;
+        if (![self isAllowedURL:httpResp.URL]) {
+            NSLog(@"[AutoUpdater] Download redirected to disallowed host: %@", httpResp.URL.host);
+            [self cleanupStagingDirectory:stagingDir];
+            return;
+        }
+
         NSFileManager *fm = [NSFileManager defaultManager];
         [fm removeItemAtURL:destURL error:nil];
-        
-        if ([fm moveItemAtURL:location toURL:destURL error:nil]) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [[NSWorkspace sharedWorkspace] openURL:destURL];
-            });
+
+        NSError *moveError = nil;
+        if (![fm moveItemAtURL:location toURL:destURL error:&moveError]) {
+            NSLog(@"[AutoUpdater] Move to staging failed: %@", moveError);
+            [self cleanupStagingDirectory:stagingDir];
+            return;
         }
+
+        // Verify the package signature and Team ID before opening.
+        NSString *signerInfo = nil;
+        if (![self verifyPackageSignature:destPath signerInfo:&signerInfo]) {
+            NSLog(@"[AutoUpdater] Package signature verification FAILED: %@", destPath);
+            [self cleanupStagingDirectory:stagingDir];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSAlert *alert = [[NSAlert alloc] init];
+                alert.alertStyle = NSAlertStyleCritical;
+                alert.messageText = @"Update Blocked — Signature Verification Failed";
+                alert.informativeText =
+                    @"The downloaded update package could not be verified. "
+                     "It may have been tampered with. The update has been cancelled for your safety.";
+                [alert addButtonWithTitle:@"OK"];
+                [alert runModal];
+            });
+            return;
+        }
+        NSLog(@"[AutoUpdater] Signature OK — %@", signerInfo);
+
+        NSDictionary *fileAttrs = [fm attributesOfItemAtPath:destPath error:nil];
+        unsigned long long fileSize = [fileAttrs fileSize];
+
+        // Show a confirmation with the verified signer identity before launching Installer.
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if ([self showVerifiedInstallConfirmation:signerInfo
+                                             version:expectedVersion
+                                            fileSize:fileSize]) {
+                [[NSWorkspace sharedWorkspace] openURL:destURL];
+            } else {
+                [self cleanupStagingDirectory:stagingDir];
+            }
+        });
     }];
     [downloadTask resume];
+    self.downloadTask = downloadTask;
+}
+
+// Verifies the Developer ID Installer signature and Team ID of a downloaded package
+// using /usr/sbin/pkgutil --check-signature. NSTask is called directly without a shell.
+// Returns YES only if both the expected certificate type and Team ID are present.
+- (BOOL)verifyPackageSignature:(NSString *)pkgPath signerInfo:(NSString **)outSignerInfo {
+    NSTask *task = [[NSTask alloc] init];
+    task.launchPath = @"/usr/sbin/pkgutil";
+    task.arguments = @[@"--check-signature", pkgPath];
+
+    NSPipe *pipe = [NSPipe pipe];
+    task.standardOutput = pipe;
+    task.standardError  = pipe;
+
+    NSError *launchError = nil;
+    [task launchAndReturnError:&launchError];
+    if (launchError) {
+        NSLog(@"[AutoUpdater] pkgutil launch error: %@", launchError);
+        return NO;
+    }
+
+    NSData *outputData = [pipe.fileHandleForReading readDataToEndOfFile];
+    [task waitUntilExit];
+    if (task.terminationStatus != 0) return NO;
+
+    NSString *output = [[NSString alloc] initWithData:outputData encoding:NSUTF8StringEncoding] ?: @"";
+
+    BOOL hasTeamID   = [output containsString:kExpectedTeamID];
+    BOOL hasCertType = [output containsString:kExpectedCertPrefix];
+
+    if (outSignerInfo) {
+        for (NSString *line in [output componentsSeparatedByString:@"\n"]) {
+            NSString *trimmed = [line stringByTrimmingCharactersInSet:
+                                 [NSCharacterSet whitespaceCharacterSet]];
+            if ([trimmed hasPrefix:kExpectedCertPrefix]) {
+                *outSignerInfo = trimmed;
+                break;
+            }
+        }
+    }
+    return hasTeamID && hasCertType;
+}
+
+// Shows a confirmation dialog with the verified signer identity, version, and size
+// before opening Installer. Returns YES if the user confirms.
+- (BOOL)showVerifiedInstallConfirmation:(NSString *)signerInfo
+                                version:(NSString *)version
+                               fileSize:(unsigned long long)fileSize {
+    double sizeMB = fileSize / (1024.0 * 1024.0);
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = [NSString stringWithFormat:@"Install Akshara %@?", version];
+    alert.informativeText = [NSString stringWithFormat:
+        @"✓ Verified: %@\n\nVersion: %@  |  Size: %.1f MB\n\n"
+         "Akshara Installer will open for you to authorize the update.",
+        signerInfo ?: [NSString stringWithFormat:@"%@ (%@)", kExpectedCertPrefix, kExpectedTeamID],
+        version, sizeMB];
+    [alert addButtonWithTitle:@"Install"];
+    [alert addButtonWithTitle:@"Cancel"];
+    return ([alert runModal] == NSAlertFirstButtonReturn);
+}
+
+// Removes the per-update staging directory on cancel or failure.
+- (void)cleanupStagingDirectory:(NSString *)path {
+    if (path.length == 0) return;
+    [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+    if ([self.stagingDirectory isEqualToString:path]) {
+        self.stagingDirectory = nil;
+    }
 }
 
 @end
+
