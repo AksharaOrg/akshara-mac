@@ -13,90 +13,172 @@ CONTENTS="$APP/Contents"
 MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
 
+# ── Design System ────────────────────────────────────────────────────────────
+GREEN='\033[32m'
+CYAN='\033[36m'
+RED='\033[31m'
+YELLOW='\033[33m'
+DIM='\033[2m'
+RESET='\033[0m'
+
+spin() {
+    local pid=$1
+    local msg="$2"
+    local delay=0.08
+    local spin_frames=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
+    tput civis 2>/dev/null || true
+    while kill -0 $pid 2>/dev/null; do
+        for frame in "${spin_frames[@]}"; do
+            printf "\r \e[36m%s\e[0m %s" "$frame" "$msg"
+            sleep $delay
+            kill -0 $pid 2>/dev/null || break
+        done
+    done
+    wait $pid
+    local status=$?
+    printf "\r\033[K"
+    if [ $status -eq 0 ]; then
+        echo -e "\033[32m✔\033[0m $msg"
+    else
+        echo -e "\033[31m✖\033[0m $msg"
+    fi
+    tput cnorm 2>/dev/null || true
+    return $status
+}
+
+print_header() {
+    clear
+    echo -e "${GREEN}"
+    echo "    _    _        _                   "
+    echo "   / \  | | _____| |__   __ _ _ __ __ _ "
+    echo "  / _ \ | |/ / __| '_ \ / \`| '__/ _\` |"
+    echo " / ___ \|   <\__ \ | | | (_| | | | (_| |"
+    echo "/_/   \_\_|\_\___/_| |_|\__,_|_|  \__,_|"
+    echo -e "${RESET}"
+    echo -e "${CYAN}අක්ෂර (Akshara) Mac Build Tool${RESET}"
+    echo "----------------------------------------"
+    echo ""
+}
+
+section() {
+    echo -e "\n${YELLOW}▸ $1${RESET}"
+}
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+print_header
+echo -e "${DIM}Mode: $MODE${RESET}"
+
+section "Preparing workspace"
+( pkill -x "$APP_NAME" >/dev/null 2>&1 || true ) &
+spin $! "Stopping existing Akshara process"
 mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES" "$MODULE_CACHE"
 
-pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+section "Compiling"
+(
+    swiftc \
+      -emit-object \
+      -wmo \
+      -module-name Akshara \
+      -module-cache-path "$MODULE_CACHE" \
+      -emit-objc-header-path "$ROOT/src/Akshara-Swift.h" \
+      -parse-as-library \
+      -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
+      -o "$BUILD_DIR/SwiftCode.o" \
+      "$ROOT/src/WelcomeView.swift" \
+      "$ROOT/src/PhoneticGuideView.swift" \
+      "$ROOT/src/WelcomeWindowManager.swift" \
+      "$ROOT/src/CapsLockHUD.swift" \
+      2>&1
+) &
+spin $! "Compiling Swift sources"
 
-swiftc \
-  -emit-object \
-  -wmo \
-  -module-name Akshara \
-  -module-cache-path "$MODULE_CACHE" \
-  -emit-objc-header-path "$ROOT/src/Akshara-Swift.h" \
-  -parse-as-library \
-  -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
-  -o "$BUILD_DIR/SwiftCode.o" \
-  "$ROOT/src/WelcomeView.swift" \
-  "$ROOT/src/PhoneticGuideView.swift" \
-  "$ROOT/src/WelcomeWindowManager.swift" \
-  "$ROOT/src/CapsLockHUD.swift"
+(
+    clang \
+      -fobjc-arc \
+      -fmodules \
+      -fmodules-cache-path="$MODULE_CACHE" \
+      -Wall -Wextra -Werror=return-type \
+      -I "$BUILD_DIR" \
+      -framework Cocoa \
+      -framework Carbon \
+      -framework InputMethodKit \
+      -framework UserNotifications \
+      -framework SwiftUI \
+      -L/usr/lib/swift \
+      -Xlinker -rpath -Xlinker /usr/lib/swift \
+      -o "$BUILD_DIR/$APP_NAME" \
+      "$BUILD_DIR/SwiftCode.o" \
+      "$ROOT/src/main.m" \
+      "$ROOT/src/SinhalaInputController.m" \
+      "$ROOT/src/SinhalaTransliterator.m" \
+      "$ROOT/src/SmartPhoneticMaps.m" \
+      "$ROOT/src/AutoUpdater.m" \
+      2>&1
+) &
+spin $! "Linking Objective-C sources"
 
+section "Assembling app bundle"
+(
+    cp "$BUILD_DIR/$APP_NAME" "$MACOS/$APP_NAME"
+    cp "$ROOT/support/Info.plist" "$CONTENTS/Info.plist"
+    if [[ -d "$ROOT/support/Resources" ]]; then
+      cp -R "$ROOT/support/Resources/." "$RESOURCES/"
+    fi
+    /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $APP_NAME" "$CONTENTS/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$CONTENTS/Info.plist"
+    printf 'APPL????' > "$CONTENTS/PkgInfo"
+) &
+spin $! "Assembling app bundle"
 
-
-clang \
-  -fobjc-arc \
-  -fmodules \
-  -fmodules-cache-path="$MODULE_CACHE" \
-  -Wall -Wextra -Werror=return-type \
-  -I "$BUILD_DIR" \
-  -framework Cocoa \
-  -framework Carbon \
-  -framework InputMethodKit \
-  -framework UserNotifications \
-  -framework SwiftUI \
-  -L/usr/lib/swift \
-  -Xlinker -rpath -Xlinker /usr/lib/swift \
-  -o "$BUILD_DIR/$APP_NAME" \
-  "$BUILD_DIR/SwiftCode.o" \
-  "$ROOT/src/main.m" \
-  "$ROOT/src/SinhalaInputController.m" \
-  "$ROOT/src/SinhalaTransliterator.m" \
-  "$ROOT/src/SmartPhoneticMaps.m" \
-  "$ROOT/src/AutoUpdater.m"
-
-
-cp "$BUILD_DIR/$APP_NAME" "$MACOS/$APP_NAME"
-cp "$ROOT/support/Info.plist" "$CONTENTS/Info.plist"
-if [[ -d "$ROOT/support/Resources" ]]; then
-  cp -R "$ROOT/support/Resources/." "$RESOURCES/"
-fi
-/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $APP_NAME" "$CONTENTS/Info.plist"
-/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$CONTENTS/Info.plist"
-printf 'APPL????' > "$CONTENTS/PkgInfo"
-
+# ── Mode dispatch ─────────────────────────────────────────────────────────────
 case "$MODE" in
   run)
+    echo ""
     "$ROOT/script/install.sh" --no-build
-    /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app"
+    ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
+    spin $! "Launching Akshara"
+    echo -e "\n${GREEN}🎉 Akshara is running!${RESET}\n"
     ;;
   --install|install)
+    echo ""
     "$ROOT/script/install.sh" --no-build
+    echo -e "\n${GREEN}🎉 Install complete!${RESET}\n"
     ;;
   --debug|debug)
+    echo -e "\n${CYAN}Starting lldb debugger...${RESET}\n"
     lldb -- "$MACOS/$APP_NAME"
     ;;
   --logs|logs)
+    echo ""
     "$ROOT/script/install.sh" --no-build
-    /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app"
+    ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
+    spin $! "Launching Akshara"
+    echo -e "\n${CYAN}Streaming logs (Ctrl+C to stop)...${RESET}\n"
     /usr/bin/log stream --info --style compact --predicate "process == \"$APP_NAME\""
     ;;
   --verify|verify)
+    echo ""
     "$ROOT/script/install.sh" --no-build
-    /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app"
+    ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
+    spin $! "Launching Akshara"
     sleep 1
-    pgrep -x "$APP_NAME" >/dev/null
-    echo "Verified $APP_NAME is running"
+    if pgrep -x "$APP_NAME" >/dev/null; then
+        echo -e "\n${GREEN}✔ Verified: $APP_NAME is running${RESET}\n"
+    else
+        echo -e "\n${RED}✖ $APP_NAME failed to start${RESET}\n"
+        exit 1
+    fi
     ;;
   build)
-    echo "Built $APP"
-    # Unregister the dist copy from LaunchServices so it doesn't appear as a
-    # duplicate input source in System Settings. Only ~/Library/Input Methods
-    # should be registered (done by install.sh).
+    echo ""
     LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-    "$LSR" -u "$APP" >/dev/null 2>&1 || true
+    ( "$LSR" -u "$APP" >/dev/null 2>&1 || true ) &
+    spin $! "Unregistering build artifact from LaunchServices"
+    echo -e "\n${GREEN}✔ Build complete → ${DIM}$APP${RESET}\n"
     ;;
   *)
-    echo "usage: $0 [run|build|install|--debug|--logs|--verify]" >&2
+    echo -e "\n${RED}✖ Unknown mode: $MODE${RESET}" >&2
+    echo -e "${DIM}Usage: $0 [run|build|install|--debug|--logs|--verify]${RESET}\n" >&2
     exit 2
     ;;
 esac

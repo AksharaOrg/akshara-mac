@@ -23,29 +23,98 @@ FINAL_PKG="$DIST_DIR/$APP_NAME-$VERSION.pkg"
 
 export COPYFILE_DISABLE=1
 
+# ── Design System ────────────────────────────────────────────────────────────
+GREEN='\033[32m'
+CYAN='\033[36m'
+RED='\033[31m'
+YELLOW='\033[33m'
+DIM='\033[2m'
+RESET='\033[0m'
+
+spin() {
+    local pid=$1
+    local msg="$2"
+    local delay=0.08
+    local spin_frames=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
+    tput civis 2>/dev/null || true
+    while kill -0 $pid 2>/dev/null; do
+        for frame in "${spin_frames[@]}"; do
+            printf "\r \e[36m%s\e[0m %s" "$frame" "$msg"
+            sleep $delay
+            kill -0 $pid 2>/dev/null || break
+        done
+    done
+    wait $pid
+    local status=$?
+    printf "\r\033[K"
+    if [ $status -eq 0 ]; then
+        echo -e "\033[32m✔\033[0m $msg"
+    else
+        echo -e "\033[31m✖\033[0m $msg"
+    fi
+    tput cnorm 2>/dev/null || true
+    return $status
+}
+
+print_header() {
+    clear
+    echo -e "${GREEN}"
+    echo "    _    _        _                   "
+    echo "   / \  | | _____| |__   __ _ _ __ __ _ "
+    echo "  / _ \ | |/ / __| '_ \ / \`| '__/ _\` |"
+    echo " / ___ \|   <\__ \ | | | (_| | | | (_| |"
+    echo "/_/   \_\_|\_\___/_| |_|\__,_|_|  \__,_|"
+    echo -e "${RESET}"
+    echo -e "${CYAN}අක්ෂර (Akshara) Mac Packager${RESET}"
+    echo "----------------------------------------"
+    echo ""
+}
+
+section() {
+    echo -e "\n${YELLOW}▸ $1${RESET}"
+}
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+print_header
+echo -e "${DIM}Version: $VERSION${RESET}"
+
+# Build first (build_and_run.sh has its own UI)
 "$ROOT/script/build_and_run.sh" build
 
-# Force-remove any previous pkg-root (may be root-owned from codesigning steps)
-sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
-rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST" "$FINAL_PKG"
-mkdir -p "$PKG_ROOT/Library/Input Methods" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$DIST_DIR"
+section "Preparing build environment"
+(
+    sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
+    rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST" "$FINAL_PKG"
+    mkdir -p "$PKG_ROOT/Library/Input Methods" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$DIST_DIR"
+) &
+spin $! "Cleaning previous build artifacts"
 
-cp -R "$APP" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
-/usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
-/usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
-/usr/bin/find "$PKG_ROOT" -name '._*' -delete
-if [[ "$APP_SIGN_IDENTITY" == "-" ]]; then
-  /usr/bin/codesign --force --sign - "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
-else
-  /usr/bin/codesign --force --options runtime --timestamp --sign "$APP_SIGN_IDENTITY" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
-fi
-/usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
-/usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
-/usr/bin/find "$PKG_ROOT" -name '._*' -delete
-/usr/bin/codesign --verify --deep --strict --verbose=4 "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
+section "Staging app bundle"
+(
+    cp -R "$APP" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
+    /usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+    /usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+    /usr/bin/find "$PKG_ROOT" -name '._*' -delete
+) &
+spin $! "Staging app bundle v${VERSION#v}"
 
+(
+    if [[ "$APP_SIGN_IDENTITY" == "-" ]]; then
+      /usr/bin/codesign --force --sign - "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
+    else
+      /usr/bin/codesign --force --options runtime --timestamp --sign "$APP_SIGN_IDENTITY" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
+    fi
+    /usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+    /usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+    /usr/bin/find "$PKG_ROOT" -name '._*' -delete
+    /usr/bin/codesign --verify --deep --strict "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
+) &
+spin $! "Signing app bundle"
+
+section "Writing installer scripts"
+(
 cat >"$PKG_SCRIPTS/postinstall" <<'SCRIPT'
 #!/bin/sh
 set -eu
@@ -55,9 +124,9 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
 
 if [ -d "$APP" ]; then
   /usr/bin/xattr -cr "$APP" 2>/dev/null || true
-  
+
   # Unregister ALL known instances of Akshara to prevent duplicates in System Settings
-  "$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" | sed 's/path:[ \t]*//' | sort | uniq | while read app_path; do
+  "$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort | uniq | while read app_path; do
       if [ "$app_path" != "$APP" ]; then
           "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
       fi
@@ -69,8 +138,7 @@ fi
 /usr/bin/killall Akshara >/dev/null 2>&1 || true
 /usr/bin/killall cfprefsd >/dev/null 2>&1 || true
 
-# Show the setup guide to the logged-in user after a new installation. The
-# app's persisted completion flag prevents it from returning on later updates.
+# Show the setup guide to the logged-in user after a new installation.
 CONSOLE_USER="$(/usr/bin/stat -f%Su /dev/console)"
 if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
   CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
@@ -80,7 +148,10 @@ fi
 exit 0
 SCRIPT
 chmod +x "$PKG_SCRIPTS/postinstall"
+) &
+spin $! "Writing postinstall script"
 
+(
 cat >"$PKG_RESOURCES/welcome.html" <<HTML
 <!doctype html>
 <html>
@@ -92,14 +163,8 @@ cat >"$PKG_RESOURCES/welcome.html" <<HTML
         line-height: 1.45;
         color: #1d1d1f;
       }
-      h1 {
-        font-size: 22px;
-        margin: 12px 0 8px;
-      }
-      p {
-        font-size: 13px;
-        margin: 0 0 8px;
-      }
+      h1 { font-size: 22px; margin: 12px 0 8px; }
+      p  { font-size: 13px; margin: 0 0 8px; }
     </style>
   </head>
   <body>
@@ -110,23 +175,25 @@ cat >"$PKG_RESOURCES/welcome.html" <<HTML
   </body>
 </html>
 HTML
+) &
+spin $! "Writing welcome page"
 
-# Input methods must stay in /Library/Input Methods.  If this is left
-# relocatable, PackageKit can follow a prior user-level installation and leave
-# the system location empty after an upgrade.
-/usr/bin/pkgbuild --analyze --root "$PKG_ROOT" "$COMPONENT_PLIST"
-/usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENT_PLIST"
+section "Building installer package"
+(
+    # Input methods must stay in /Library/Input Methods.
+    /usr/bin/pkgbuild --analyze --root "$PKG_ROOT" "$COMPONENT_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENT_PLIST"
 
-/usr/bin/pkgbuild \
-  --root "$PKG_ROOT" \
-  --component-plist "$COMPONENT_PLIST" \
-  --scripts "$PKG_SCRIPTS" \
-  --identifier "$BUNDLE_ID.pkg" \
-  --version "$VERSION" \
-  --install-location "/" \
-  "$COMPONENT_PKG"
+    /usr/bin/pkgbuild \
+      --root "$PKG_ROOT" \
+      --component-plist "$COMPONENT_PLIST" \
+      --scripts "$PKG_SCRIPTS" \
+      --identifier "$BUNDLE_ID.pkg" \
+      --version "$VERSION" \
+      --install-location "/" \
+      "$COMPONENT_PKG" 2>&1
 
-cat >"$PKG_DISTRIBUTION" <<XML
+    cat >"$PKG_DISTRIBUTION" <<XML
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="1">
   <title>Akshara</title>
@@ -143,31 +210,47 @@ cat >"$PKG_DISTRIBUTION" <<XML
 </installer-gui-script>
 XML
 
-PRODUCTBUILD_ARGS=(--distribution "$PKG_DISTRIBUTION" --resources "$PKG_RESOURCES" --package-path "$ROOT/build")
-if [[ -n "$PKG_SIGN_IDENTITY" ]]; then
-  PRODUCTBUILD_ARGS+=(--sign "$PKG_SIGN_IDENTITY")
-fi
-/usr/bin/productbuild "${PRODUCTBUILD_ARGS[@]}" "$FINAL_PKG"
+    PRODUCTBUILD_ARGS=(--distribution "$PKG_DISTRIBUTION" --resources "$PKG_RESOURCES" --package-path "$ROOT/build")
+    if [[ -n "$PKG_SIGN_IDENTITY" ]]; then
+      PRODUCTBUILD_ARGS+=(--sign "$PKG_SIGN_IDENTITY")
+    fi
+    /usr/bin/productbuild "${PRODUCTBUILD_ARGS[@]}" "$FINAL_PKG" 2>&1
+) &
+spin $! "Building .pkg installer"
 
+# ── Notarization (optional) ──────────────────────────────────────────────────
 if [[ -n "$NOTARY_KEY" || -n "$NOTARY_KEY_ID" || -n "$NOTARY_ISSUER_ID" ]]; then
-  if [[ -z "$NOTARY_KEY" || -z "$NOTARY_KEY_ID" || -z "$NOTARY_ISSUER_ID" ]]; then
-    echo "AKSHARA_NOTARY_KEY, AKSHARA_NOTARY_KEY_ID, and AKSHARA_NOTARY_ISSUER_ID must be set together" >&2
-    exit 2
-  fi
-  /usr/bin/xcrun notarytool submit "$FINAL_PKG" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
-  /usr/bin/xcrun stapler staple "$FINAL_PKG"
+    if [[ -z "$NOTARY_KEY" || -z "$NOTARY_KEY_ID" || -z "$NOTARY_ISSUER_ID" ]]; then
+        echo -e "\n${RED}✖ AKSHARA_NOTARY_KEY, AKSHARA_NOTARY_KEY_ID, and AKSHARA_NOTARY_ISSUER_ID must all be set together${RESET}" >&2
+        exit 2
+    fi
+    section "Notarizing"
+    ( /usr/bin/xcrun notarytool submit "$FINAL_PKG" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait 2>&1 ) &
+    spin $! "Submitting to Apple notary service"
+    ( /usr/bin/xcrun stapler staple "$FINAL_PKG" 2>&1 ) &
+    spin $! "Stapling notarization ticket"
 elif [[ -n "$NOTARY_PROFILE" ]]; then
-  /usr/bin/xcrun notarytool submit "$FINAL_PKG" --keychain-profile "$NOTARY_PROFILE" --wait
-  /usr/bin/xcrun stapler staple "$FINAL_PKG"
+    section "Notarizing"
+    ( /usr/bin/xcrun notarytool submit "$FINAL_PKG" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1 ) &
+    spin $! "Submitting to Apple notary service"
+    ( /usr/bin/xcrun stapler staple "$FINAL_PKG" 2>&1 ) &
+    spin $! "Stapling notarization ticket"
 fi
 
-/usr/sbin/pkgutil --check-signature "$FINAL_PKG"
-echo "Built installer: $FINAL_PKG"
-echo "Install with: open \"$FINAL_PKG\""
+section "Verifying"
+( /usr/sbin/pkgutil --check-signature "$FINAL_PKG" >/dev/null 2>&1 ) &
+spin $! "Verifying package signature"
 
-# Clean up the intermediate build folder so it doesn't get registered as a
-# duplicate input source by macOS LaunchServices.
-sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
-rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST"
-LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-"$LSR" -u "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+# ── Cleanup ──────────────────────────────────────────────────────────────────
+section "Cleaning up"
+(
+    LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+    "$LSR" -u "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+    sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
+    rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST"
+) &
+spin $! "Removing intermediate build files"
+
+echo -e "\n${GREEN}🎉 Package ready!${RESET}"
+echo -e "${DIM}Output: $FINAL_PKG${RESET}"
+echo -e "${DIM}Install: open \"$FINAL_PKG\"${RESET}\n"
