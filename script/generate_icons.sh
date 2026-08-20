@@ -46,11 +46,11 @@ done
 /usr/bin/iconutil -c icns "$ICONSET" -o "$RESOURCES/Akshara.icns"
 
 # Generate a standard macOS rounded-rectangle style input menu icon.
-magick -size 560x440 xc:none \
-  -fill black -draw "roundrectangle 0,0 559,439 120,120" \
-  \( -size 560x440 xc:none -font "$MENU_FONT" -gravity center -pointsize 320 -fill black -annotate +0-15 'අක' -morphology Dilate Disk:3 \) \
+magick -size 630x450 xc:none \
+  -fill black -draw "roundrectangle 0,0 629,449 140,140" \
+  \( -size 630x450 xc:none -font "$MENU_FONT" -gravity center -pointsize 340 -fill black -annotate +0-15 'අක' -morphology Dilate Disk:3 \) \
   -compose DstOut -composite \
-  -resize '56x44!' \
+  -resize '42x30!' \
   "$WORK/AksharaMenuBlackCanvas.png"
 
 magick "$WORK/AksharaMenuBlackCanvas.png" -fill white -colorize 100 "$WORK/AksharaMenuWhiteCanvas.png"
