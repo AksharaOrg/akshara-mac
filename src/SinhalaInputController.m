@@ -165,6 +165,13 @@
 
 @interface SinhalaInputController ()
 @property(nonatomic, strong) NSMutableString *rawBuffer;
+@property(nonatomic, copy) NSString *cachedRawBuffer;
+@property(nonatomic, copy) NSString *cachedMarkedString;
+@property(nonatomic, assign) NSInteger cachedMarkedMode;
+@property(nonatomic, assign) NSInteger cachedInputMode;
+@property(nonatomic, assign) BOOL hasCachedInputMode;
+@property(nonatomic, assign) NSInteger appliedKeyboardLayoutMode;
+@property(nonatomic, assign) BOOL hasAppliedKeyboardLayoutMode;
 @property(nonatomic, strong) NSDate *lastSpaceTime;
 @property(nonatomic, strong) NSString *lastCommittedString;
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
@@ -173,8 +180,11 @@
 @property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
+- (void)appendInputToComposition:(NSString *)input client:(id)sender;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
+
+static const NSUInteger kMaxRawBufferLength = 256;
 
 @implementation SinhalaInputController
 
@@ -203,6 +213,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 };
 
 - (AksharaInputMode)currentInputMode {
+  if (self.hasCachedInputMode) {
+    return (AksharaInputMode)self.cachedInputMode;
+  }
+
   TISInputSourceRef source = TISCopyCurrentKeyboardInputSource();
   if (!source) {
     return AksharaInputModePhonetic;
@@ -215,6 +229,8 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     mode = AksharaInputModePhonetic;
   }
   CFRelease(source);
+  self.cachedInputMode = mode;
+  self.hasCachedInputMode = YES;
   return mode;
 }
 
@@ -224,6 +240,12 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 // represents.  The layout is non-selectable, so it never appears as another
 // input source in System Settings.
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode {
+  if (self.hasAppliedKeyboardLayoutMode && self.appliedKeyboardLayoutMode == mode) {
+    return;
+  }
+  self.appliedKeyboardLayoutMode = mode;
+  self.hasAppliedKeyboardLayoutMode = YES;
+
   if (mode != AksharaInputModeWijesekara) {
     return;
   }
@@ -307,12 +329,44 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (NSString *)markedString {
   AksharaInputMode mode = [self currentInputMode];
-  if (mode == AksharaInputModeSmartPhonetic) {
-    return [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
-  } else if (mode == AksharaInputModePhonetic) {
-    return [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
+  if (self.cachedRawBuffer && self.cachedMarkedString &&
+      [self.cachedRawBuffer isEqualToString:self.rawBuffer] &&
+      self.cachedMarkedMode == mode) {
+    return self.cachedMarkedString;
   }
-  return [SinhalaTransliterator markedSLSInputOrder:self.rawBuffer];
+
+  NSString *result = nil;
+  if (mode == AksharaInputModeSmartPhonetic) {
+    result = [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
+  } else if (mode == AksharaInputModePhonetic) {
+    result = [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
+  } else {
+    result = [SinhalaTransliterator markedSLSInputOrder:self.rawBuffer];
+  }
+  self.cachedRawBuffer = self.rawBuffer;
+  self.cachedMarkedString = result;
+  self.cachedMarkedMode = mode;
+  return result;
+}
+
+- (void)appendInputToComposition:(NSString *)input client:(id)sender {
+  if (input.length == 0) {
+    return;
+  }
+
+  NSUInteger offset = 0;
+  while (offset < input.length) {
+    if (self.rawBuffer.length >= kMaxRawBufferLength) {
+      [self commitBufferWithSuffix:@"" client:sender];
+    }
+
+    NSUInteger availableLength = kMaxRawBufferLength - self.rawBuffer.length;
+    NSUInteger chunkLength = MIN(availableLength, input.length - offset);
+    NSString *chunk = [input substringWithRange:NSMakeRange(offset, chunkLength)];
+    [self.rawBuffer appendString:chunk];
+    [self updateCustomComposition];
+    offset += chunkLength;
+  }
 }
 
 - (void)clearComposition {
@@ -515,8 +569,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     NSString *lookup = [self usKeyStringForKeyCode:keyCode shifted:shifted] ?: string;
     NSString *mapped = [SinhalaTransliterator slsCharacterForInput:lookup shifted:shifted altGr:altGr];
     if ([SinhalaTransliterator isSinhalaInputUnit:mapped]) {
-      [self.rawBuffer appendString:mapped];
-      [self updateCustomComposition];
+      [self appendInputToComposition:mapped client:sender];
       return YES;
     } else if (![mapped isEqualToString:lookup]) {
       [self commitBufferWithSuffix:mapped client:sender];
@@ -538,8 +591,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     if ([self shouldCommitBufferBeforeInput:string]) {
       [self commitBufferWithSuffix:@"" client:sender];
     }
-    [self.rawBuffer appendString:string];
-    [self updateCustomComposition];
+    [self appendInputToComposition:string client:sender];
     return YES;
   }
 
@@ -612,6 +664,11 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)activateServer:(id)sender {
   [super activateServer:sender];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [WelcomeWindowManager.shared markInputMethodActivated];
+  });
+  self.hasCachedInputMode = NO;
+  self.hasAppliedKeyboardLayoutMode = NO;
   // Seed initial caps lock state for HUD delta detection
   _lastKnownCapsLockState = ([NSEvent modifierFlags] & NSEventModifierFlagCapsLock) != 0;
   // Kick HUD singleton alive on main thread (safe, no polling)
@@ -628,6 +685,8 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (void)deactivateServer:(id)sender {
   [self commitComposition:sender];
+  self.hasCachedInputMode = NO;
+  self.hasAppliedKeyboardLayoutMode = NO;
   [self.rawBuffer setString:@""];
   self.lastCommittedString = @"";
   self.expectedCursorLocation = NSNotFound;
@@ -783,48 +842,64 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   if ([oldString isEqualToString:newString]) {
     return;
   }
-  
-  NSMutableArray<NSString *> *oldGraphemes = [NSMutableArray array];
-  [oldString enumerateSubstringsInRange:NSMakeRange(0, oldString.length)
-                                options:NSStringEnumerationByComposedCharacterSequences
-                             usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-                               (void)substringRange; (void)enclosingRange; (void)stop;
-                               [oldGraphemes addObject:substring];
-                             }];
-                             
-  NSMutableArray<NSString *> *newGraphemes = [NSMutableArray array];
-  [newString enumerateSubstringsInRange:NSMakeRange(0, newString.length)
-                                options:NSStringEnumerationByComposedCharacterSequences
-                             usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-                               (void)substringRange; (void)enclosingRange; (void)stop;
-                               [newGraphemes addObject:substring];
-                             }];
-                             
-  NSUInteger commonCount = 0;
-  NSUInteger minCount = MIN(oldGraphemes.count, newGraphemes.count);
-  for (NSUInteger i = 0; i < minCount; i++) {
-    if ([oldGraphemes[i] isEqualToString:newGraphemes[i]]) {
-      commonCount++;
-    } else {
-      break;
+
+  BOOL isSimpleAppend = [newString hasPrefix:oldString];
+  NSUInteger graphemesToDelete = 0;
+  NSUInteger unicharsToDelete = 0;
+  NSMutableString *inserts = [NSMutableString string];
+
+  // Appending a suffix is the common typing path. It cannot change the
+  // existing marked text prefix, so avoid rebuilding both grapheme arrays.
+  if (isSimpleAppend) {
+    [inserts appendString:[newString substringFromIndex:oldString.length]];
+  } else {
+    NSMutableArray<NSString *> *oldGraphemes = [NSMutableArray array];
+    [oldString enumerateSubstringsInRange:NSMakeRange(0, oldString.length)
+                                  options:NSStringEnumerationByComposedCharacterSequences
+                               usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                                 (void)substringRange; (void)enclosingRange; (void)stop;
+                                 [oldGraphemes addObject:substring];
+                               }];
+
+    NSMutableArray<NSString *> *newGraphemes = [NSMutableArray array];
+    [newString enumerateSubstringsInRange:NSMakeRange(0, newString.length)
+                                  options:NSStringEnumerationByComposedCharacterSequences
+                               usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                                 (void)substringRange; (void)enclosingRange; (void)stop;
+                                 [newGraphemes addObject:substring];
+                               }];
+
+    NSUInteger commonCount = 0;
+    NSUInteger minCount = MIN(oldGraphemes.count, newGraphemes.count);
+    for (NSUInteger i = 0; i < minCount; i++) {
+      if ([oldGraphemes[i] isEqualToString:newGraphemes[i]]) {
+        commonCount++;
+      } else {
+        break;
+      }
+    }
+
+    BOOL isDeletion = (oldGraphemes.count > newGraphemes.count && commonCount == newGraphemes.count);
+    if (isDeletion && newString.length > 0) {
+      commonCount = 0;
+    }
+
+    graphemesToDelete = oldGraphemes.count - commonCount;
+    for (NSUInteger i = commonCount; i < newGraphemes.count; i++) {
+      [inserts appendString:newGraphemes[i]];
+    }
+
+    for (NSUInteger i = commonCount; i < oldGraphemes.count; i++) {
+      unicharsToDelete += [oldGraphemes[i] length];
     }
   }
-  
-  BOOL isDeletion = (oldGraphemes.count > newGraphemes.count && commonCount == newGraphemes.count);
-  if (isDeletion && newString.length > 0) {
-      commonCount = 0;
-  }
-  
-  NSUInteger graphemesToDelete = oldGraphemes.count - commonCount;
-  
-  NSMutableString *inserts = [NSMutableString string];
-  for (NSUInteger i = commonCount; i < newGraphemes.count; i++) {
-    [inserts appendString:newGraphemes[i]];
-  }
-  
-  NSUInteger unicharsToDelete = 0;
-  for (NSUInteger i = commonCount; i < oldGraphemes.count; i++) {
-    unicharsToDelete += [oldGraphemes[i] length];
+
+  if (isSimpleAppend && inserts.length > 0) {
+    [client insertText:inserts replacementRange:NSMakeRange(NSNotFound, 0)];
+    self.lastCommittedString = newString;
+    self.expectedCursorLocation = NSNotFound;
+    self.expectedCursorLocationGraphemes = NSNotFound;
+    return;
   }
   
   if (unicharsToDelete > 0 || inserts.length > 0) {

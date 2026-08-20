@@ -1,6 +1,32 @@
 import Foundation
 
-let bundlePrefix = "com.local.inputmethod.Akshara"
+let knownPrefixes = [
+  "com.local.inputmethod.Akshara",
+  "com.local.inputmethod.SinhalaCleanIME",
+  "Akshara",
+  "SinhalaCleanIME",
+  "CleanIME"
+]
+
+func matchesKnownInputSource(_ rawValue: Any?) -> Bool {
+  guard let value = rawValue as? String else { return false }
+
+  for prefix in knownPrefixes {
+    if value == prefix || value.hasPrefix(prefix) || value.localizedCaseInsensitiveContains(prefix) {
+      return true
+    }
+  }
+
+  return false
+}
+
+func isStaleAksharaEntry(_ entry: [String: Any]) -> Bool {
+  let identityKeys = ["InputSourceID", "Bundle ID", "Input Mode"]
+  return identityKeys.contains { key in
+    matchesKnownInputSource(entry[key])
+  }
+}
+
 let defaults = UserDefaults.standard
 var domain = defaults.persistentDomain(forName: "com.apple.HIToolbox") ?? [:]
 let sourceKeys = [
@@ -9,14 +35,6 @@ let sourceKeys = [
   "AppleInputSourceHistory"
 ]
 
-func isAksharaEntry(_ entry: [String: Any]) -> Bool {
-  let identityKeys = ["InputSourceID", "Bundle ID", "Input Mode"]
-  return identityKeys.contains { key in
-    guard let value = entry[key] as? String else { return false }
-    return value.hasPrefix(bundlePrefix) || value.localizedCaseInsensitiveContains("Akshara")
-  }
-}
-
 for key in sourceKeys {
   guard let entries = domain[key] as? [Any] else {
     continue
@@ -24,7 +42,7 @@ for key in sourceKeys {
 
   domain[key] = entries.filter { entry in
     guard let dictionary = entry as? [String: Any] else { return true }
-    return !isAksharaEntry(dictionary)
+    return !isStaleAksharaEntry(dictionary)
   }
 }
 

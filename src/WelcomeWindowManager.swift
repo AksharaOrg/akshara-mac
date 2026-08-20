@@ -4,18 +4,36 @@ import SwiftUI
 @objc public class WelcomeWindowManager: NSObject, NSWindowDelegate {
     @objc public static let shared = WelcomeWindowManager()
 
-    private static let hasCompletedWelcomeKey = "AksharaHasCompletedWelcome"
     private var window: NSWindow?
     private var phoneticGuideWindow: NSWindow?
+    private var inputMethodWasActivated = false
 
-    /// The onboarding window is useful once after installation; subsequent
-    /// input-method launches should stay invisible and lightweight.
+    private func ensureVisibleAppActivation() {
+        if NSApp.activationPolicy() != .regular {
+            NSApp.setActivationPolicy(.regular)
+        }
+    }
+
+    private func restoreAccessoryActivationIfPossible() {
+        guard window == nil, phoneticGuideWindow == nil else { return }
+        if NSApp.activationPolicy() != .accessory {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    /// Show the welcome window whenever Akshara is launched.
     @objc public func showWelcomeWindowIfNeeded() {
-        guard !UserDefaults.standard.bool(forKey: Self.hasCompletedWelcomeKey) else { return }
+        guard !inputMethodWasActivated else { return }
         showWelcomeWindow()
     }
 
+    @objc public func markInputMethodActivated() {
+        inputMethodWasActivated = true
+    }
+
     @objc public func showWelcomeWindow() {
+        ensureVisibleAppActivation()
+
         if let window = window {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
@@ -67,12 +85,14 @@ import SwiftUI
     }
 
     @objc public func closeWelcomeWindow() {
-        UserDefaults.standard.set(true, forKey: Self.hasCompletedWelcomeKey)
         window?.close()
         window = nil
+        restoreAccessoryActivationIfPossible()
     }
 
     @objc public func showPhoneticGuideWithSmartMode(_ isSmart: Bool) {
+        ensureVisibleAppActivation()
+
         if let window = phoneticGuideWindow {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
@@ -133,10 +153,11 @@ import SwiftUI
     public func windowWillClose(_ notification: Notification) {
         guard let closingWindow = notification.object as? NSWindow else { return }
         if closingWindow === window {
-            UserDefaults.standard.set(true, forKey: Self.hasCompletedWelcomeKey)
             window = nil
+            restoreAccessoryActivationIfPossible()
         } else if closingWindow === phoneticGuideWindow {
             phoneticGuideWindow = nil
+            restoreAccessoryActivationIfPossible()
         }
     }
 }

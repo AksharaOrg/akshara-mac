@@ -1,6 +1,9 @@
 #import "AutoUpdater.h"
 #import <UserNotifications/UserNotifications.h>
 #import <AppKit/AppKit.h>
+#import <mach-o/dyld.h>
+#import <mach-o/fat.h>
+#import <mach/machine.h>
 
 // Team ID and cert prefix used to verify downloaded packages before opening.
 static NSString * const kExpectedTeamID     = @"8292UX7379";
@@ -10,6 +13,32 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
     return @[@"githubusercontent.com",
              @"github.com",
              @"github-releases.githubusercontent.com"];
+}
+
+static NSString *currentPackageArchitecture(void) {
+    NSString *executablePath = [[NSBundle mainBundle] executablePath];
+    NSData *headerData = executablePath ? [NSData dataWithContentsOfFile:executablePath
+                                                                  options:NSDataReadingMappedIfSafe
+                                                                    error:nil] : nil;
+    if (headerData.length >= sizeof(uint32_t)) {
+        uint32_t magic = 0;
+        [headerData getBytes:&magic length:sizeof(magic)];
+        if (magic == FAT_MAGIC || magic == FAT_CIGAM || magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
+            return @"universal";
+        }
+    }
+
+    const struct mach_header *header = _dyld_get_image_header(0);
+    if (!header) return @"universal";
+
+    cpu_type_t cpuType = header->cputype;
+    if ((cpuType & CPU_ARCH_ABI64) && (cpuType & ~CPU_ARCH_ABI64) == CPU_TYPE_ARM) {
+        return @"arm64";
+    }
+    if ((cpuType & CPU_ARCH_ABI64) && (cpuType & ~CPU_ARCH_ABI64) == CPU_TYPE_X86) {
+        return @"x86_64";
+    }
+    return @"universal";
 }
 
 @interface AutoUpdater () <UNUserNotificationCenterDelegate>
@@ -134,21 +163,23 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
                 return;
             }
             NSString *pkgUrl = nil;
-            // Match the exact versioned filename rather than accepting any .pkg asset.
-            NSString *expectedName = [NSString stringWithFormat:@"Akshara-v%@.pkg", tagName];
-            for (NSDictionary *asset in assets) {
-                if (![asset isKindOfClass:[NSDictionary class]]) continue;
-                NSString *name = asset[@"name"];
-                if ([name isKindOfClass:[NSString class]] && [name isEqualToString:expectedName]) {
+            NSString *architecture = currentPackageArchitecture();
+            NSArray<NSString *> *architecturesToTry = @[architecture, @"universal"];
+            for (NSString *candidateArchitecture in architecturesToTry) {
+                NSString *expectedName = [NSString stringWithFormat:@"Akshara-v%@-%@.pkg", tagName, candidateArchitecture];
+                for (NSDictionary *asset in assets) {
+                    if (![asset isKindOfClass:[NSDictionary class]]) continue;
+                    NSString *name = asset[@"name"];
+                    if (![name isKindOfClass:[NSString class]] || ![name isEqualToString:expectedName]) continue;
+
                     NSString *candidate = asset[@"browser_download_url"];
-                    if (![candidate isKindOfClass:[NSString class]]) break;
-                    // Validate the download URL host before storing.
-                    NSURL *candidateURL = [NSURL URLWithString:candidate];
+                    NSURL *candidateURL = [candidate isKindOfClass:[NSString class]] ? [NSURL URLWithString:candidate] : nil;
                     if ([self isAllowedURL:candidateURL]) {
                         pkgUrl = candidate;
                     }
                     break;
                 }
+                if (pkgUrl) break;
             }
             
             if (pkgUrl) {
@@ -285,7 +316,7 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     }
     self.stagingDirectory = stagingDir;
 
-    NSString *pkgName  = [NSString stringWithFormat:@"Akshara-v%@.pkg", expectedVersion];
+    NSString *pkgName  = [url.lastPathComponent copy];
     NSString *destPath = [stagingDir stringByAppendingPathComponent:pkgName];
     NSURL    *destURL  = [NSURL fileURLWithPath:destPath];
 
@@ -400,14 +431,36 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 - (BOOL)showVerifiedInstallConfirmation:(NSString *)signerInfo
                                 version:(NSString *)version
                                fileSize:(unsigned long long)fileSize {
+    (void)signerInfo;
     double sizeMB = fileSize / (1024.0 * 1024.0);
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = [NSString stringWithFormat:@"Install Akshara %@?", version];
-    alert.informativeText = [NSString stringWithFormat:
-        @"✓ Verified: %@\n\nVersion: %@  |  Size: %.1f MB\n\n"
-         "Akshara Installer will open for you to authorize the update.",
-        signerInfo ?: [NSString stringWithFormat:@"%@ (%@)", kExpectedCertPrefix, kExpectedTeamID],
+    NSString *details = [NSString stringWithFormat:
+        @"✓ Verified v%@ (%.1f MB)\n\n"
+         "Akshara Installer will open for you\n"
+         "to authorize the update.",
         version, sizeMB];
+    NSMutableAttributedString *attributedDetails =
+        [[NSMutableAttributedString alloc] initWithString:details];
+    NSRange verifiedRange = [details rangeOfString:@"✓ Verified"];
+    if (verifiedRange.location != NSNotFound) {
+        [attributedDetails addAttributes:@{
+            NSFontAttributeName: [NSFont boldSystemFontOfSize:NSFont.systemFontSize],
+            NSForegroundColorAttributeName: NSColor.labelColor
+        } range:verifiedRange];
+    }
+    NSTextField *detailsLabel = [NSTextField labelWithString:@""];
+    detailsLabel.attributedStringValue = attributedDetails;
+    detailsLabel.editable = NO;
+    detailsLabel.selectable = NO;
+    detailsLabel.bezeled = NO;
+    detailsLabel.drawsBackground = NO;
+    detailsLabel.maximumNumberOfLines = 0;
+    detailsLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    detailsLabel.frame = NSMakeRect(0, 0, 420, 0);
+    [detailsLabel sizeToFit];
+    alert.informativeText = @"";
+    alert.accessoryView = detailsLabel;
     [alert addButtonWithTitle:@"Install"];
     [alert addButtonWithTitle:@"Cancel"];
     return ([alert runModal] == NSAlertFirstButtonReturn);

@@ -203,7 +203,7 @@ struct WelcomeView: View {
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.primary)
                 
-                Text("Akshara keyboard is installed but needs to be added\nin your System Settings before you can use it.")
+                Text("Akshara is installed, but it still needs to be enabled\nin System Settings before you can type in Sinhala.")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -394,7 +394,7 @@ struct WelcomeView: View {
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.primary)
                 
-                Text("Akshara is now activated and ready to use.\nYou can select it from the input menu in the menu bar.")
+                Text("Akshara is active and ready to use.\nChoose it from the input menu in the menu bar whenever you type.")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -449,8 +449,14 @@ struct WelcomeView: View {
     }
 
     private func openKeyboardSettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.PreferenceKey.Keyboard") else { return }
-        NSWorkspace.shared.open(url)
+        let settingsURLs = [
+            "x-apple.systempreferences:com.apple.Keyboard-Settings.extension",
+            "x-apple.systempreferences:"
+        ].compactMap(URL.init(string:))
+
+        for url in settingsURLs where NSWorkspace.shared.open(url) {
+            break
+        }
     }
 
     private func openGitHubRepo() {

@@ -223,11 +223,17 @@ The project includes build and maintenance scripts in [`script/`](file:///Users/
 # Run unit & transliteration tests (including 500-word SLS lexicon stress test)
 ./script/test.sh
 
+# Validate the required install/build prerequisites before packaging
+./script/validate_install.sh
+
 # Build the app bundle to dist/Akshara.app
 ./script/build_and_run.sh build
 
 # Build and test run immediately
 ./script/build_and_run.sh run
+
+# Verify the installed app starts cleanly after install
+./script/build_and_run.sh --verify
 
 # Create a signed/distributable .pkg installer package
 ./script/package.sh

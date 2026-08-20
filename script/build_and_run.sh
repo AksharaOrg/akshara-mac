@@ -100,6 +100,7 @@ section "Compiling ${ARCH_MODE} Binary"
 
         swiftc \
           -target $SWIFT_TARGET \
+          -O \
           -emit-object \
           -wmo \
           -module-name Akshara \
@@ -116,6 +117,7 @@ section "Compiling ${ARCH_MODE} Binary"
 
         clang \
           -arch $ARCH \
+          -O2 \
           -fobjc-arc \
           -fmodules \
           -fmodules-cache-path="$MODULE_CACHE" \
@@ -190,6 +192,7 @@ case "$MODE" in
     ;;
   --verify|verify)
     echo ""
+    "$ROOT/script/validate_install.sh"
     "$ROOT/script/install.sh" --no-build
     ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
     spin $! "Launching Akshara"

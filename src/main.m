@@ -16,7 +16,8 @@ int main(int argc, const char *argv[]) {
     // windows to become key. LSBackgroundOnly apps cannot present windows.
     [application setActivationPolicy:NSApplicationActivationPolicyAccessory];
     server = [[IMKServer alloc] initWithName:connectionName bundleIdentifier:identifier];
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
       [WelcomeWindowManager.shared showWelcomeWindowIfNeeded];
     });
     [application run];
