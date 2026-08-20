@@ -16,7 +16,7 @@ Describe what you expected.
 
 ## Input Details
 
-- Input mode: Akshara - Wijesekara / Akshara - Phonetic
+- Input mode: Akshara - Wijesekara / Akshara - Phonetic / Akshara - Smart Phonetic
 - Keys typed:
 - Expected output:
 - Actual output:

@@ -2,10 +2,10 @@
 #import <UserNotifications/UserNotifications.h>
 #import <AppKit/AppKit.h>
 
-// A-01: Expected Team ID embedded in the binary — verified before opening any package.
+// Team ID and cert prefix used to verify downloaded packages before opening.
 static NSString * const kExpectedTeamID     = @"8292UX7379";
 static NSString * const kExpectedCertPrefix = @"Developer ID Installer:";
-// A-01: Only accept download URLs from these GitHub-owned hosts.
+// Only accept download URLs from known GitHub-owned hosts.
 static NSArray<NSString *> *allowedAssetHosts(void) {
     return @[@"objects.githubusercontent.com",
              @"github.com",
@@ -16,7 +16,7 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
 @property (nonatomic, strong) NSString *downloadUrl;
 @property (nonatomic, strong) NSString *availableVersion;
 @property (nonatomic, strong) NSURLSessionDownloadTask *downloadTask;
-// A-03: Track staging directory so we can clean it up on cancel or failure.
+// Tracks the per-download staging directory so it can be cleaned up on cancel or failure.
 @property (nonatomic, strong) NSString *stagingDirectory;
 @end
 
@@ -68,7 +68,7 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
 }
 
 
-// A-01: Validate that a URL has an HTTPS scheme and is on an allowed GitHub host.
+// Returns YES if the URL uses HTTPS and its host is one of the known GitHub asset hosts.
 - (BOOL)isAllowedURL:(NSURL *)url {
     if (!url) return NO;
     if (![url.scheme isEqualToString:@"https"]) return NO;
@@ -95,7 +95,7 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
             if (isManual) { [self showManualCheckError]; }
             return;
         }
-        // A-01: Confirm response came from an allowed host (redirect check).
+        // Guard against redirects to unexpected hosts.
         if (![self isAllowedURL:httpResponse.URL]) {
             if (isManual) { [self showManualCheckError]; }
             return;
@@ -110,7 +110,6 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
         }
         
         NSString *tagName = json[@"tag_name"];
-        // A-01: Validate tagName type.
         if (![tagName isKindOfClass:[NSString class]] || tagName.length == 0) {
             if (isManual) { [self showManualCheckError]; }
             return;
@@ -135,7 +134,7 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
                 return;
             }
             NSString *pkgUrl = nil;
-            // A-01: Match exact expected asset filename (Akshara-vX.Y.Z.pkg), not just any .pkg.
+            // Match the exact versioned filename rather than accepting any .pkg asset.
             NSString *expectedName = [NSString stringWithFormat:@"Akshara-v%@.pkg", tagName];
             for (NSDictionary *asset in assets) {
                 if (![asset isKindOfClass:[NSDictionary class]]) continue;
@@ -143,7 +142,7 @@ static NSArray<NSString *> *allowedAssetHosts(void) {
                 if ([name isKindOfClass:[NSString class]] && [name isEqualToString:expectedName]) {
                     NSString *candidate = asset[@"browser_download_url"];
                     if (![candidate isKindOfClass:[NSString class]]) break;
-                    // A-01: Validate asset download URL host before storing.
+                    // Validate the download URL host before storing.
                     NSURL *candidateURL = [NSURL URLWithString:candidate];
                     if ([self isAllowedURL:candidateURL]) {
                         pkgUrl = candidate;
@@ -253,7 +252,7 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 - (void)downloadAndInstallUpdate {
     if (!self.downloadUrl || !self.availableVersion) return;
 
-    // A-01: Re-validate URL immediately before starting download.
+    // Re-validate the URL right before starting the download.
     NSURL *url = [NSURL URLWithString:self.downloadUrl];
     if (![self isAllowedURL:url]) {
         NSLog(@"[AutoUpdater] Rejected disallowed download URL: %@", url);
@@ -271,8 +270,8 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
                                                                     content:content trigger:nil]
              withCompletionHandler:nil];
 
-    // A-03: Private, randomly-named staging directory (mode 0700) prevents same-user
-    // processes from predicting or replacing the downloaded file before it is opened.
+    // Use a randomly-named private staging directory (mode 0700) so the download
+    // path is not predictable by other processes running as the same user.
     NSString *uuid = [[NSUUID UUID] UUIDString];
     NSString *stagingDir = [NSTemporaryDirectory() stringByAppendingPathComponent:uuid];
     NSError *mkdirError = nil;
@@ -300,7 +299,7 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
             return;
         }
 
-        // A-01: Verify final response URL is still on an allowed host after any redirects.
+        // Check that we weren't redirected to an unexpected host.
         NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)response;
         if (![self isAllowedURL:httpResp.URL]) {
             NSLog(@"[AutoUpdater] Download redirected to disallowed host: %@", httpResp.URL.host);
@@ -318,7 +317,7 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
             return;
         }
 
-        // A-01: Verify Developer ID Installer signature and Team ID BEFORE opening.
+        // Verify the package signature and Team ID before opening.
         NSString *signerInfo = nil;
         if (![self verifyPackageSignature:destPath signerInfo:&signerInfo]) {
             NSLog(@"[AutoUpdater] Package signature verification FAILED: %@", destPath);
@@ -340,7 +339,7 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
         NSDictionary *fileAttrs = [fm attributesOfItemAtPath:destPath error:nil];
         unsigned long long fileSize = [fileAttrs fileSize];
 
-        // A-01: Show verified confirmation dialog before launching Installer.
+        // Show a confirmation with the verified signer identity before launching Installer.
         dispatch_async(dispatch_get_main_queue(), ^{
             if ([self showVerifiedInstallConfirmation:signerInfo
                                              version:expectedVersion
@@ -355,9 +354,9 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     self.downloadTask = downloadTask;
 }
 
-// A-01: Verify the Developer ID Installer signature and Team ID of a downloaded
-// package using /usr/sbin/pkgutil --check-signature. NSTask is used directly
-// (no shell). Returns YES only if both the cert type and expected Team ID are present.
+// Verifies the Developer ID Installer signature and Team ID of a downloaded package
+// using /usr/sbin/pkgutil --check-signature. NSTask is called directly without a shell.
+// Returns YES only if both the expected certificate type and Team ID are present.
 - (BOOL)verifyPackageSignature:(NSString *)pkgPath signerInfo:(NSString **)outSignerInfo {
     NSTask *task = [[NSTask alloc] init];
     task.launchPath = @"/usr/sbin/pkgutil";
@@ -396,8 +395,8 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     return hasTeamID && hasCertType;
 }
 
-// A-01: Show a confirmation dialog with verified signer identity, version, and size
-// BEFORE opening Installer. Returns YES if the user confirms.
+// Shows a confirmation dialog with the verified signer identity, version, and size
+// before opening Installer. Returns YES if the user confirms.
 - (BOOL)showVerifiedInstallConfirmation:(NSString *)signerInfo
                                 version:(NSString *)version
                                fileSize:(unsigned long long)fileSize {
@@ -414,7 +413,7 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     return ([alert runModal] == NSAlertFirstButtonReturn);
 }
 
-// A-03: Remove the per-update staging directory on cancel or failure.
+// Removes the per-update staging directory on cancel or failure.
 - (void)cleanupStagingDirectory:(NSString *)path {
     if (path.length == 0) return;
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];

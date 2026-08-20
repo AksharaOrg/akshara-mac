@@ -830,9 +830,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     BOOL isGraphemeApp = (self.expectedCursorLocationGraphemes != NSNotFound && sel.location == self.expectedCursorLocationGraphemes);
     BOOL isBrokenApp = (self.lastReportedRange.location != NSNotFound && sel.location == self.lastReportedRange.location);
     
-    // A-04: Validate that sel.location is >= both deletion counts before any subtraction.
-    // isNativeApp previously bypassed this guard, allowing unsigned integer underflow
-    // from a malicious or inconsistent text-input client.
+    // Ensure sel.location is large enough for both subtractions before proceeding.
+    // An inconsistent or hostile text client can report a cursor position smaller than
+    // the deletion count, which would cause unsigned integer underflow.
     BOOL safeToSubtract = (sel.location >= unicharsToDelete && sel.location >= graphemesToDelete);
     if (sel.location != NSNotFound && safeToSubtract && (isNativeApp || (!isGraphemeApp && !isBrokenApp))) {
       NSRange replaceRange = (unicharsToDelete == 0) ? NSMakeRange(NSNotFound, 0) : NSMakeRange(sel.location - unicharsToDelete, unicharsToDelete);
@@ -852,7 +852,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
         [self insertString:inserts client:client];
       }
       
-      // A-04: Guard subtraction in the else-branch (broken/grapheme clients) too.
+      // Guard the subtraction in the fallback branch (broken/grapheme clients) too.
       if (sel.location != NSNotFound && sel.location >= unicharsToDelete && sel.location >= graphemesToDelete) {
         self.expectedCursorLocation = (sel.location - unicharsToDelete) + inserts.length;
         self.expectedCursorLocationGraphemes = (sel.location - graphemesToDelete) + [self graphemeCountForString:inserts];
