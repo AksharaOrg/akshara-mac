@@ -11,31 +11,8 @@ public class CapsLockHUD: NSObject {
 
     private override init() {
         super.init()
-        // Register global event monitor for Caps Lock changes.
-        // Input Methods already have keyboard access so this works without
-        // additional permissions.
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            guard let self = self else { return }
-            let isCapsOn = event.modifierFlags.contains(.capsLock)
-            if isCapsOn != self.lastKnownState {
-                self.lastKnownState = isCapsOn
-                DispatchQueue.main.async {
-                    self.displayHUD(capsLockOn: isCapsOn)
-                }
-            }
-        }
-        // Also add a local monitor so it works when Akshara itself has focus
-        NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            guard let self = self else { return event }
-            let isCapsOn = event.modifierFlags.contains(.capsLock)
-            if isCapsOn != self.lastKnownState {
-                self.lastKnownState = isCapsOn
-                DispatchQueue.main.async {
-                    self.displayHUD(capsLockOn: isCapsOn)
-                }
-            }
-            return event
-        }
+        // We rely on SinhalaInputController's handleEvent: to trigger the HUD.
+        // This ensures the HUD only appears when Akshara is the active input method.
     }
 
     // Called from ObjC as a fallback (e.g. handleEvent: if it does fire)
