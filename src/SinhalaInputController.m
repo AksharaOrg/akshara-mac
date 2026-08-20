@@ -165,6 +165,9 @@
 
 @interface SinhalaInputController ()
 @property(nonatomic, strong) NSMutableString *rawBuffer;
+@property(nonatomic, copy) NSString *cachedRawBuffer;
+@property(nonatomic, copy) NSString *cachedMarkedString;
+@property(nonatomic, assign) NSInteger cachedMarkedMode;
 @property(nonatomic, strong) NSDate *lastSpaceTime;
 @property(nonatomic, strong) NSString *lastCommittedString;
 @property(nonatomic, assign) NSUInteger expectedCursorLocation;
@@ -173,8 +176,11 @@
 @property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
+- (void)appendInputToComposition:(NSString *)input client:(id)sender;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
+
+static const NSUInteger kMaxRawBufferLength = 256;
 
 @implementation SinhalaInputController
 
@@ -307,12 +313,44 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (NSString *)markedString {
   AksharaInputMode mode = [self currentInputMode];
-  if (mode == AksharaInputModeSmartPhonetic) {
-    return [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
-  } else if (mode == AksharaInputModePhonetic) {
-    return [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
+  if (self.cachedRawBuffer && self.cachedMarkedString &&
+      [self.cachedRawBuffer isEqualToString:self.rawBuffer] &&
+      self.cachedMarkedMode == mode) {
+    return self.cachedMarkedString;
   }
-  return [SinhalaTransliterator markedSLSInputOrder:self.rawBuffer];
+
+  NSString *result = nil;
+  if (mode == AksharaInputModeSmartPhonetic) {
+    result = [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
+  } else if (mode == AksharaInputModePhonetic) {
+    result = [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
+  } else {
+    result = [SinhalaTransliterator markedSLSInputOrder:self.rawBuffer];
+  }
+  self.cachedRawBuffer = self.rawBuffer;
+  self.cachedMarkedString = result;
+  self.cachedMarkedMode = mode;
+  return result;
+}
+
+- (void)appendInputToComposition:(NSString *)input client:(id)sender {
+  if (input.length == 0) {
+    return;
+  }
+
+  NSUInteger offset = 0;
+  while (offset < input.length) {
+    if (self.rawBuffer.length >= kMaxRawBufferLength) {
+      [self commitBufferWithSuffix:@"" client:sender];
+    }
+
+    NSUInteger availableLength = kMaxRawBufferLength - self.rawBuffer.length;
+    NSUInteger chunkLength = MIN(availableLength, input.length - offset);
+    NSString *chunk = [input substringWithRange:NSMakeRange(offset, chunkLength)];
+    [self.rawBuffer appendString:chunk];
+    [self updateCustomComposition];
+    offset += chunkLength;
+  }
 }
 
 - (void)clearComposition {
@@ -515,8 +553,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     NSString *lookup = [self usKeyStringForKeyCode:keyCode shifted:shifted] ?: string;
     NSString *mapped = [SinhalaTransliterator slsCharacterForInput:lookup shifted:shifted altGr:altGr];
     if ([SinhalaTransliterator isSinhalaInputUnit:mapped]) {
-      [self.rawBuffer appendString:mapped];
-      [self updateCustomComposition];
+      [self appendInputToComposition:mapped client:sender];
       return YES;
     } else if (![mapped isEqualToString:lookup]) {
       [self commitBufferWithSuffix:mapped client:sender];
@@ -538,8 +575,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     if ([self shouldCommitBufferBeforeInput:string]) {
       [self commitBufferWithSuffix:@"" client:sender];
     }
-    [self.rawBuffer appendString:string];
-    [self updateCustomComposition];
+    [self appendInputToComposition:string client:sender];
     return YES;
   }
 

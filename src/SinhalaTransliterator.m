@@ -83,15 +83,25 @@ static NSString * const SLSTokenYansaya = @"\uE005";
 }
 
 + (NSArray<NSString *> *)smartConsonantKeys {
-  return @[@"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
-           @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"k", @"g", @"c", @"j",
-           @"C", @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
-           @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
+  static NSArray<NSString *> *keys;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keys = @[@"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
+             @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"k", @"g", @"c", @"j",
+             @"C", @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
+             @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
+  });
+  return keys;
 }
 
 + (NSArray<NSString *> *)smartVowelKeys {
-  return @[@"aee", @"ae", @"aa", @"ii", @"uu", @"ee", @"ai", @"oo", @"au",
-           @"A", @"I", @"U", @"E", @"O", @"a", @"i", @"u", @"e", @"o"];
+  static NSArray<NSString *> *keys;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keys = @[@"aee", @"ae", @"aa", @"ii", @"uu", @"ee", @"ai", @"oo", @"au",
+             @"A", @"I", @"U", @"E", @"O", @"a", @"i", @"u", @"e", @"o"];
+  });
+  return keys;
 }
 
 + (NSDictionary<NSString *, NSString *> *)vowels {
@@ -125,15 +135,25 @@ static NSString * const SLSTokenYansaya = @"\uE005";
 }
 
 + (NSArray<NSString *> *)consonantKeys {
-  return @[@"nndh", @"nng", @"nnj", @"nnd", @"nnq", @"nnk", @"nnh", @"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
-           @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"B", @"k", @"g", @"c", @"j",
-           @"C", @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
-           @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
+  static NSArray<NSString *> *keys;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keys = @[@"nndh", @"nng", @"nnj", @"nnd", @"nnq", @"nnk", @"nnh", @"aee", @"ng", @"gn", @"ny", @"kh", @"gh", @"ch", @"jh", @"Th", @"Dh",
+             @"th", @"dh", @"ph", @"bh", @"sh", @"Sh", @"B", @"k", @"g", @"c", @"j",
+             @"C", @"T", @"D", @"N", @"t", @"d", @"n", @"p", @"b", @"m", @"y", @"r",
+             @"l", @"L", @"v", @"w", @"s", @"h", @"f", @"R", @"Y"];
+  });
+  return keys;
 }
 
 + (NSArray<NSString *> *)vowelKeys {
-  return @[@"aee", @"ae", @"aa", @"ii", @"uu", @"ee", @"ai", @"oo", @"au",
-           @"A", @"I", @"U", @"E", @"O", @"a", @"i", @"u", @"e", @"o"];
+  static NSArray<NSString *> *keys;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keys = @[@"aee", @"ae", @"aa", @"ii", @"uu", @"ee", @"ai", @"oo", @"au",
+             @"A", @"I", @"U", @"E", @"O", @"a", @"i", @"u", @"e", @"o"];
+  });
+  return keys;
 }
 
 + (NSString *)matchFrom:(NSString *)input at:(NSUInteger)index keys:(NSArray<NSString *> *)keys {
