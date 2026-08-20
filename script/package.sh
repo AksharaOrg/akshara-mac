@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Akshara"
 BUNDLE_ID="com.local.inputmethod.Akshara"
 VERSION="${AKSHARA_VERSION:-0.1.0}"
+ARCH="${AKSHARA_ARCH:-universal}"
 APP_SIGN_IDENTITY="${AKSHARA_APP_SIGN_IDENTITY:--}"
 PKG_SIGN_IDENTITY="${AKSHARA_PKG_SIGN_IDENTITY:-}"
 NOTARY_PROFILE="${AKSHARA_NOTARY_PROFILE:-}"
@@ -19,7 +20,11 @@ PKG_RESOURCES="$ROOT/build/pkg-resources"
 PKG_DISTRIBUTION="$ROOT/build/Distribution.xml"
 COMPONENT_PKG="$ROOT/build/$APP_NAME-component.pkg"
 COMPONENT_PLIST="$ROOT/build/$APP_NAME-component.plist"
-FINAL_PKG="$DIST_DIR/$APP_NAME-$VERSION.pkg"
+case "$ARCH" in
+  universal|arm64|x86_64) ;;
+  *) echo "Unknown architecture: $ARCH" >&2; exit 2 ;;
+esac
+FINAL_PKG="$DIST_DIR/$APP_NAME-$VERSION-$ARCH.pkg"
 
 export COPYFILE_DISABLE=1
 
@@ -84,7 +89,7 @@ print_header
 echo -e "${DIM}Version: $VERSION${RESET}"
 
 # Build first (build_and_run.sh has its own UI)
-"$ROOT/script/build_and_run.sh" build
+AKSHARA_ARCH="$ARCH" "$ROOT/script/build_and_run.sh" build
 
 section "Preparing build environment"
 (

@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Akshara"
 BUNDLE_ID="com.local.inputmethod.Akshara"
 MODE="${1:-run}"
+ARCH_MODE="${AKSHARA_ARCH:-universal}"
 BUILD_DIR="$ROOT/build"
 DIST_DIR="$ROOT/dist"
 MODULE_CACHE="$BUILD_DIR/ModuleCache"
@@ -77,7 +78,13 @@ section "Preparing workspace"
 spin $! "Stopping existing Akshara process"
 mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES" "$MODULE_CACHE"
 
-section "Compiling Universal Binary"
+case "$ARCH_MODE" in
+  universal) BUILD_ARCHES=(x86_64 arm64) ;;
+  arm64|x86_64) BUILD_ARCHES=("$ARCH_MODE") ;;
+  *) echo -e "${RED}✖ Unknown architecture: $ARCH_MODE${RESET}" >&2; exit 2 ;;
+esac
+
+section "Compiling ${ARCH_MODE} Binary"
 (
     build_arch() {
         local ARCH=$1
@@ -131,11 +138,16 @@ section "Compiling Universal Binary"
           2>&1
     }
 
-    build_arch "x86_64"
-    build_arch "arm64"
-    lipo -create "$BUILD_DIR/x86_64/$APP_NAME" "$BUILD_DIR/arm64/$APP_NAME" -output "$BUILD_DIR/$APP_NAME"
+    for arch in "${BUILD_ARCHES[@]}"; do
+      build_arch "$arch"
+    done
+    if [[ "$ARCH_MODE" == "universal" ]]; then
+      lipo -create "$BUILD_DIR/x86_64/$APP_NAME" "$BUILD_DIR/arm64/$APP_NAME" -output "$BUILD_DIR/$APP_NAME"
+    else
+      cp "$BUILD_DIR/$ARCH_MODE/$APP_NAME" "$BUILD_DIR/$APP_NAME"
+    fi
 ) &
-spin $! "Compiling Universal Binary (x86_64 + arm64)"
+spin $! "Compiling ${ARCH_MODE} Binary"
 
 section "Assembling app bundle"
 (
@@ -202,12 +214,3 @@ case "$MODE" in
     exit 2
     ;;
 esac
-
-echo "✅ Build සහ Install කිරීම සාර්ථකයි!"
-
-echo "⚠️ 5. තත්පර 5කින් Mac එක Force Restart වෙනවා..."
-echo "කරුණාකර වැඩ කරමින් සිටි ෆයිල්ස් Save කරන්න!"
-sleep 5
-
-# Mac එක Force Restart කිරීම
-sudo shutdown -r now

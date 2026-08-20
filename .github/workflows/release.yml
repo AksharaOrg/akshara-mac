@@ -51,7 +51,7 @@ jobs:
           security import "$RUNNER_TEMP/installer-signing.p12" -k "$KEYCHAIN_PATH" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CERTIFICATE_PASSWORD" "$KEYCHAIN_PATH"
 
-      - name: Notarize and package
+      - name: Notarize and package all architectures
         env:
           AKSHARA_VERSION: ${{ github.ref_name }}
           AKSHARA_APP_SIGN_IDENTITY: "Developer ID Application: Lahiru Himesh Madusanka Siddha Dewayala Gedara (8292UX7379)"
@@ -63,17 +63,23 @@ jobs:
           set -euo pipefail
           printf '%s' "$APPLE_API_KEY_BASE64" | base64 -D > "$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
           export AKSHARA_NOTARY_KEY="$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
-          ./script/package.sh
-          spctl --assess --type install --verbose=4 "dist/Akshara-${GITHUB_REF_NAME}.pkg"
+          for architecture in universal arm64 x86_64; do
+            AKSHARA_ARCH="$architecture" ./script/package.sh
+            spctl --assess --type install --verbose=4 "dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
+          done
 
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          PKG_PATH="dist/Akshara-${GITHUB_REF_NAME}.pkg"
+          PKG_PATHS=(
+            "dist/Akshara-${GITHUB_REF_NAME}-universal.pkg"
+            "dist/Akshara-${GITHUB_REF_NAME}-arm64.pkg"
+            "dist/Akshara-${GITHUB_REF_NAME}-x86_64.pkg"
+          )
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "$PKG_PATH" --clobber
+            gh release upload "$GITHUB_REF_NAME" "${PKG_PATHS[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "$PKG_PATH" --title "Akshara ${GITHUB_REF_NAME#v}" --generate-notes
+            gh release create "$GITHUB_REF_NAME" "${PKG_PATHS[@]}" --title "Akshara ${GITHUB_REF_NAME#v}" --generate-notes
           fi
