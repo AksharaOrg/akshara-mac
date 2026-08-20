@@ -7,7 +7,7 @@ static NSString * const kExpectedTeamID     = @"8292UX7379";
 static NSString * const kExpectedCertPrefix = @"Developer ID Installer:";
 // Only accept download URLs from known GitHub-owned hosts.
 static NSArray<NSString *> *allowedAssetHosts(void) {
-    return @[@"objects.githubusercontent.com",
+    return @[@"githubusercontent.com",
              @"github.com",
              @"github-releases.githubusercontent.com"];
 }
