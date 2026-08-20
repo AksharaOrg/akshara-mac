@@ -25,6 +25,8 @@ export COPYFILE_DISABLE=1
 
 "$ROOT/script/build_and_run.sh" build
 
+# Force-remove any previous pkg-root (may be root-owned from codesigning steps)
+sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
 rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST" "$FINAL_PKG"
 mkdir -p "$PKG_ROOT/Library/Input Methods" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$DIST_DIR"
 
@@ -162,3 +164,10 @@ fi
 /usr/sbin/pkgutil --check-signature "$FINAL_PKG"
 echo "Built installer: $FINAL_PKG"
 echo "Install with: open \"$FINAL_PKG\""
+
+# Clean up the intermediate build folder so it doesn't get registered as a
+# duplicate input source by macOS LaunchServices.
+sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
+rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST"
+LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+"$LSR" -u "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true

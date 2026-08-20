@@ -89,6 +89,11 @@ case "$MODE" in
     ;;
   build)
     echo "Built $APP"
+    # Unregister the dist copy from LaunchServices so it doesn't appear as a
+    # duplicate input source in System Settings. Only ~/Library/Input Methods
+    # should be registered (done by install.sh).
+    LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+    "$LSR" -u "$APP" >/dev/null 2>&1 || true
     ;;
   *)
     echo "usage: $0 [run|build|install|--debug|--logs|--verify]" >&2
