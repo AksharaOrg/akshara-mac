@@ -1,3 +1,19 @@
+#!/bin/bash
+
+# කෝඩ් එකේ මොකක් හරි එරර් එකක් ආවොත් ස්ක්‍රිප්ට් එක නවතින්න
+set -e 
+
+echo "🧹 1. පරණ වර්ෂන් එක Uninstall කරමින්..."
+sh ./script/uninstall.sh
+
+echo "🗑️ 2. Keyboard Cache (HIToolbox) මකා දමමින්..."
+rm -f ~/Library/Preferences/com.apple.HIToolbox.plist
+
+echo "🔄 3. System UI Server එක Restart කරමින්..."
+killall SystemUIServer || true
+
+echo "🔨 4. අලුත් කීබෝර්ඩ් එක Build කරමින්..."
+
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -77,49 +93,65 @@ section "Preparing workspace"
 spin $! "Stopping existing Akshara process"
 mkdir -p "$BUILD_DIR" "$MACOS" "$RESOURCES" "$MODULE_CACHE"
 
-section "Compiling"
+section "Compiling Universal Binary"
 (
-    swiftc \
-      -emit-object \
-      -wmo \
-      -module-name Akshara \
-      -module-cache-path "$MODULE_CACHE" \
-      -emit-objc-header-path "$ROOT/src/Akshara-Swift.h" \
-      -parse-as-library \
-      -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
-      -o "$BUILD_DIR/SwiftCode.o" \
-      "$ROOT/src/WelcomeView.swift" \
-      "$ROOT/src/PhoneticGuideView.swift" \
-      "$ROOT/src/WelcomeWindowManager.swift" \
-      "$ROOT/src/CapsLockHUD.swift" \
-      2>&1
-) &
-spin $! "Compiling Swift sources"
+    build_arch() {
+        local ARCH=$1
+        local BUILD_DIR_ARCH="$BUILD_DIR/$ARCH"
+        mkdir -p "$BUILD_DIR_ARCH"
+        
+        local SWIFT_TARGET=""
+        if [ "$ARCH" == "x86_64" ]; then
+            SWIFT_TARGET="x86_64-apple-macos14.0"
+        else
+            SWIFT_TARGET="arm64-apple-macos14.0"
+        fi
 
-(
-    clang \
-      -fobjc-arc \
-      -fmodules \
-      -fmodules-cache-path="$MODULE_CACHE" \
-      -Wall -Wextra -Werror=return-type \
-      -I "$BUILD_DIR" \
-      -framework Cocoa \
-      -framework Carbon \
-      -framework InputMethodKit \
-      -framework UserNotifications \
-      -framework SwiftUI \
-      -L/usr/lib/swift \
-      -Xlinker -rpath -Xlinker /usr/lib/swift \
-      -o "$BUILD_DIR/$APP_NAME" \
-      "$BUILD_DIR/SwiftCode.o" \
-      "$ROOT/src/main.m" \
-      "$ROOT/src/SinhalaInputController.m" \
-      "$ROOT/src/SinhalaTransliterator.m" \
-      "$ROOT/src/SmartPhoneticMaps.m" \
-      "$ROOT/src/AutoUpdater.m" \
-      2>&1
+        swiftc \
+          -target $SWIFT_TARGET \
+          -emit-object \
+          -wmo \
+          -module-name Akshara \
+          -module-cache-path "$MODULE_CACHE" \
+          -emit-objc-header-path "$ROOT/src/Akshara-Swift.h" \
+          -parse-as-library \
+          -import-objc-header "$ROOT/src/Akshara-Bridging-Header.h" \
+          -o "$BUILD_DIR_ARCH/SwiftCode.o" \
+          "$ROOT/src/WelcomeView.swift" \
+          "$ROOT/src/PhoneticGuideView.swift" \
+          "$ROOT/src/WelcomeWindowManager.swift" \
+          "$ROOT/src/CapsLockHUD.swift" \
+          2>&1
+
+        clang \
+          -arch $ARCH \
+          -fobjc-arc \
+          -fmodules \
+          -fmodules-cache-path="$MODULE_CACHE" \
+          -Wall -Wextra -Werror=return-type \
+          -I "$BUILD_DIR" \
+          -framework Cocoa \
+          -framework Carbon \
+          -framework InputMethodKit \
+          -framework UserNotifications \
+          -framework SwiftUI \
+          -L/usr/lib/swift \
+          -Xlinker -rpath -Xlinker /usr/lib/swift \
+          -o "$BUILD_DIR_ARCH/$APP_NAME" \
+          "$BUILD_DIR_ARCH/SwiftCode.o" \
+          "$ROOT/src/main.m" \
+          "$ROOT/src/SinhalaInputController.m" \
+          "$ROOT/src/SinhalaTransliterator.m" \
+          "$ROOT/src/SmartPhoneticMaps.m" \
+          "$ROOT/src/AutoUpdater.m" \
+          2>&1
+    }
+
+    build_arch "x86_64"
+    build_arch "arm64"
+    lipo -create "$BUILD_DIR/x86_64/$APP_NAME" "$BUILD_DIR/arm64/$APP_NAME" -output "$BUILD_DIR/$APP_NAME"
 ) &
-spin $! "Linking Objective-C sources"
+spin $! "Compiling Universal Binary (x86_64 + arm64)"
 
 section "Assembling app bundle"
 (
@@ -186,3 +218,12 @@ case "$MODE" in
     exit 2
     ;;
 esac
+
+echo "✅ Build සහ Install කිරීම සාර්ථකයි!"
+
+#echo "⚠️ 5. තත්පර 5කින් Mac එක Force Restart වෙනවා..."
+#echo "කරුණාකර වැඩ කරමින් සිටි ෆයිල්ස් Save කරන්න!"
+#sleep 5
+
+# Mac එක Force Restart කිරීම
+#sudo shutdown -r now
