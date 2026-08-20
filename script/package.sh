@@ -194,7 +194,11 @@ section "Building installer package"
 (
     # Input methods must stay in /Library/Input Methods.
     /usr/bin/pkgbuild --analyze --root "$PKG_ROOT" "$COMPONENT_PLIST"
-    /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$COMPONENT_PLIST"
+    if /usr/libexec/PlistBuddy -c "Print :0:BundleIsRelocatable" "$COMPONENT_PLIST" >/dev/null 2>&1; then
+      /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENT_PLIST"
+    else
+      /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$COMPONENT_PLIST"
+    fi
 
     /usr/bin/pkgbuild \
       --root "$PKG_ROOT" \
