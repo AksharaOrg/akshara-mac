@@ -1,19 +1,3 @@
-#!/bin/bash
-
-# කෝඩ් එකේ මොකක් හරි එරර් එකක් ආවොත් ස්ක්‍රිප්ට් එක නවතින්න
-set -e 
-
-echo "🧹 1. පරණ වර්ෂන් එක Uninstall කරමින්..."
-sh ./script/uninstall.sh
-
-echo "🗑️ 2. Keyboard Cache (HIToolbox) මකා දමමින්..."
-rm -f ~/Library/Preferences/com.apple.HIToolbox.plist
-
-echo "🔄 3. System UI Server එක Restart කරමින්..."
-killall SystemUIServer || true
-
-echo "🔨 4. අලුත් කීබෝර්ඩ් එක Build කරමින්..."
-
 #!/usr/bin/env bash
 set -euo pipefail
 

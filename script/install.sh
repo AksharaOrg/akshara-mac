@@ -10,6 +10,7 @@ SRC="$ROOT/dist/$APP_NAME"
 DST_DIR="$HOME/Library/Input Methods"
 DST="$DST_DIR/$APP_NAME"
 LEGACY_DST="$DST_DIR/$LEGACY_APP_NAME"
+SYSTEM_DST="/Library/Input Methods/$APP_NAME"
 
 # ── Design System (CI-safe) ──────────────────────────────────────────────────
 if [ -t 1 ]; then
@@ -64,12 +65,14 @@ fi
 section "Cleaning up duplicates"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 (
+    /usr/bin/swift "$ROOT/script/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
     ("$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" || true) | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort -u | while read app_path; do
         if [ "$app_path" != "$DST" ]; then
             "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
         fi
     done
     "$LSREGISTER" -u "$LEGACY_DST" >/dev/null 2>&1 || true
+    "$LSREGISTER" -u "$SYSTEM_DST" >/dev/null 2>&1 || true
     rm -rf "$DST" "$LEGACY_DST"
     killall "$APP_PROCESS" 2>/dev/null || true
     killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
@@ -90,11 +93,7 @@ spin $! "Copying app to Input Methods"
 ) &
 spin $! "Signing app bundle"
 
-( "$LSREGISTER" -f "$DST" >/dev/null 2>&1 || true ) &
-spin $! "Registering with LaunchServices"
-
-( /usr/bin/swift "$ROOT/script/enable_akshara.swift" "$DST" >/dev/null 2>&1 ) &
-spin $! "Enabling input sources"
+echo "  → macOS will discover the input method from the Input Methods folder"
 
 section "Restarting services"
 (
