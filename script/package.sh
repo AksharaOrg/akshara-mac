@@ -24,40 +24,45 @@ FINAL_PKG="$DIST_DIR/$APP_NAME-$VERSION.pkg"
 export COPYFILE_DISABLE=1
 
 # ── Design System ────────────────────────────────────────────────────────────
-GREEN='\033[32m'
-CYAN='\033[36m'
-RED='\033[31m'
-YELLOW='\033[33m'
-DIM='\033[2m'
-RESET='\033[0m'
+# Only use colors/animations when stdout is a real terminal
+if [ -t 1 ]; then
+    GREEN='\033[32m'; CYAN='\033[36m'; RED='\033[31m'
+    YELLOW='\033[33m'; DIM='\033[2m'; RESET='\033[0m'
+else
+    GREEN=''; CYAN=''; RED=''; YELLOW=''; DIM=''; RESET=''
+fi
 
 spin() {
     local pid=$1
     local msg="$2"
-    local delay=0.08
-    local spin_frames=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
-    tput civis 2>/dev/null || true
-    while kill -0 $pid 2>/dev/null; do
-        for frame in "${spin_frames[@]}"; do
-            printf "\r \e[36m%s\e[0m %s" "$frame" "$msg"
-            sleep $delay
-            kill -0 $pid 2>/dev/null || break
+    if [ -t 1 ]; then
+        local delay=0.08
+        local spin_frames=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
+        tput civis 2>/dev/null || true
+        while kill -0 $pid 2>/dev/null; do
+            for frame in "${spin_frames[@]}"; do
+                printf "\r \e[36m%s\e[0m %s" "$frame" "$msg"
+                sleep $delay
+                kill -0 $pid 2>/dev/null || break
+            done
         done
-    done
-    wait $pid
-    local status=$?
-    printf "\r\033[K"
+        wait $pid; local status=$?
+        printf "\r\033[K"
+        tput cnorm 2>/dev/null || true
+    else
+        printf "  → %s ... " "$msg"
+        wait $pid; local status=$?
+    fi
     if [ $status -eq 0 ]; then
         echo -e "\033[32m✔\033[0m $msg"
     else
-        echo -e "\033[31m✖\033[0m $msg"
+        echo -e "\033[31m✖\033[0m $msg" >&2
     fi
-    tput cnorm 2>/dev/null || true
     return $status
 }
 
 print_header() {
-    clear
+    [ -t 1 ] && clear || true
     echo -e "${GREEN}"
     echo "    _    _        _                   "
     echo "   / \  | | _____| |__   __ _ _ __ __ _ "

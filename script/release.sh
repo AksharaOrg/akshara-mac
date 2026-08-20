@@ -14,7 +14,7 @@ spin() {
     local msg="$2"
     local delay=0.08
     local spin_frames=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
-    tput civis # Hide cursor
+    tput civis 2>/dev/null || true # Hide cursor
     while kill -0 $pid 2>/dev/null; do
         for frame in "${spin_frames[@]}"; do
             printf "\r \e[36m%s\e[0m %s" "$frame" "$msg"
@@ -30,12 +30,12 @@ spin() {
     else
         echo -e "\033[31m✖\033[0m $msg"
     fi
-    tput cnorm # Show cursor
+    tput cnorm 2>/dev/null || true # Show cursor
     return $status
 }
 
 print_header() {
-    clear
+    [ -t 1 ] && clear || true
     echo -e "${GREEN}"
     echo "    _    _        _                   "
     echo "   / \  | | _____| |__   __ _ _ __ __ _ "
@@ -242,12 +242,12 @@ handle_delete() {
                 ;;
             "") # Enter
                 local TAG="${TAGS[$SELECTED_IDX]}"
-                tput cnorm
+                tput cnorm 2>/dev/null || true
                 echo -e "\n${RED}WARNING: You are about to delete tag '$TAG'.${RESET}"
                 read -p "Are you sure? [y/N]: " confirm
                 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
                     echo "Aborted."
-                    tput civis
+                    tput civis 2>/dev/null || true
                     read -n 1 -s -r -p "Press any key to continue..."
                     return
                 fi
@@ -271,7 +271,7 @@ handle_delete() {
                 fi
                 
                 echo -e "\n${GREEN}✔ Deletion complete.${RESET}"
-                tput civis
+                tput civis 2>/dev/null || true
                 read -n 1 -s -r -p "Press any key to continue..."
                 return
                 ;;
@@ -286,9 +286,9 @@ handle_delete() {
 git remote add upstream https://github.com/AksharaOrg/akshara-mac.git 2>/dev/null || true
 
 # Hide cursor initially
-tput civis
+tput civis 2>/dev/null || true
 # Ensure cursor is visible on exit
-trap "tput cnorm" EXIT
+trap "tput cnorm 2>/dev/null || true" EXIT
 
 # Main loop
 while true; do
@@ -314,14 +314,14 @@ while true; do
             esac
             ;;
         "") # Enter key
-            tput cnorm # Show cursor during interactions
+            tput cnorm 2>/dev/null || true # Show cursor during interactions
             case $SELECTED in
                 0) handle_create ;;
                 1) handle_abandoned ;;
                 2) handle_delete ;;
                 3) echo -e "\nGoodbye!"; exit 0 ;;
             esac
-            tput civis # Hide cursor again
+            tput civis 2>/dev/null || true # Hide cursor again
             ;;
         q|Q) # Quit key
             echo -e "\nGoodbye!"; exit 0 ;;
