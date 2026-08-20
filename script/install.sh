@@ -11,6 +11,7 @@ DST_DIR="$HOME/Library/Input Methods"
 DST="$DST_DIR/$APP_NAME"
 LEGACY_DST="$DST_DIR/$LEGACY_APP_NAME"
 SYSTEM_DST="/Library/Input Methods/$APP_NAME"
+CLEANUP_VERSION="0.1.22"
 
 # ── Design System (CI-safe) ──────────────────────────────────────────────────
 if [ -t 1 ]; then
@@ -65,7 +66,10 @@ fi
 section "Cleaning up duplicates"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 (
-    /usr/bin/swift "$ROOT/script/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
+    INSTALLED_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$SRC/Contents/Info.plist" 2>/dev/null || true)
+    if [[ "$INSTALLED_VERSION" == "$CLEANUP_VERSION" ]]; then
+        /usr/bin/swift "$ROOT/script/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
+    fi
     ("$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" || true) | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort -u | while read app_path; do
         if [ "$app_path" != "$DST" ]; then
             "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
