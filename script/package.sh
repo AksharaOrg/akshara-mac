@@ -144,17 +144,39 @@ if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" 
   CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
   /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open -n "$APP" >/dev/null 2>&1 || true
 
-  # The package installer runs as root, so present the restart prompt inside
-  # the logged-in user's GUI session after the update has finished copying.
-  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/osascript <<'APPLESCRIPT' >/dev/null 2>&1 &
-tell application "System Events"
-  activate
-  set response to display dialog "Akshara has been updated successfully. Restart your Mac to finish applying the update." buttons {"Later", "Restart Now"} default button "Restart Now" with title "Akshara Updated" with icon note
-  if button returned of response is "Restart Now" then
-    restart
-  end if
-end tell
-APPLESCRIPT
+  # The package installer runs as root, so present a native NSAlert inside the
+  # logged-in user's GUI session after the update has finished copying.
+  DIALOG_SOURCE="$(/usr/bin/mktemp /tmp/akshara-restart-dialog.XXXXXX.swift)"
+  /bin/cat >"$DIALOG_SOURCE" <<'SWIFT'
+import AppKit
+
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
+DispatchQueue.main.async {
+    let alert = NSAlert()
+    alert.messageText = "Akshara Updated"
+    alert.informativeText = "Akshara has been updated successfully. Restart your Mac to finish applying the update."
+    alert.addButton(withTitle: "Restart Now")
+    alert.addButton(withTitle: "Later")
+    alert.alertStyle = .informational
+
+    let iconPath = "\(NSHomeDirectory())/Library/Input Methods/Akshara.app/Contents/Resources/Akshara.icns"
+    if let icon = NSImage(contentsOfFile: iconPath) {
+        alert.icon = icon
+    }
+
+    if alert.runModal() == .alertFirstButtonReturn {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        task.arguments = ["-e", "tell application \"System Events\" to restart"]
+        try? task.run()
+    }
+    NSApp.terminate(nil)
+}
+app.run()
+SWIFT
+  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/swift "$DIALOG_SOURCE" >/dev/null 2>&1 || true
+  /bin/rm -f "$DIALOG_SOURCE"
 fi
 
 exit 0
