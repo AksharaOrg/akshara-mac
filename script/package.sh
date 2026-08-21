@@ -334,7 +334,18 @@ elif [[ -n "$NOTARY_PROFILE" ]]; then
 fi
 
 section "Verifying"
-( /usr/sbin/pkgutil --check-signature "$FINAL_PKG" >/dev/null 2>&1 ) &
+(
+    SIGNATURE_OUTPUT=$(/usr/sbin/pkgutil --check-signature "$FINAL_PKG" 2>&1)
+    printf '%s\n' "$SIGNATURE_OUTPUT"
+    if ! printf '%s\n' "$SIGNATURE_OUTPUT" | /usr/bin/grep -Eq 'Status: (signed by a certificate trusted by macOS|signed by a certificate trusted by Apple)'; then
+      echo "Package signature is not valid or trusted; refusing to publish $FINAL_PKG" >&2
+      exit 1
+    fi
+    if [[ -n "$PKG_SIGN_IDENTITY" ]] && ! printf '%s\n' "$SIGNATURE_OUTPUT" | /usr/bin/grep -Fq "$PKG_SIGN_IDENTITY"; then
+      echo "Package signer does not match AKSHARA_PKG_SIGN_IDENTITY" >&2
+      exit 1
+    fi
+) &
 spin $! "Verifying package signature"
 
 # ── Cleanup ──────────────────────────────────────────────────────────────────

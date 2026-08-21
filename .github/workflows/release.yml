@@ -77,7 +77,12 @@ jobs:
           for architecture in universal arm64 x86_64; do
             AKSHARA_ARCH="$architecture" ./script/package.sh
             PACKAGE="dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
-            pkgutil --check-signature "$PACKAGE"
+            SIGNATURE_OUTPUT=$(pkgutil --check-signature "$PACKAGE" 2>&1)
+            echo "$SIGNATURE_OUTPUT"
+            if ! echo "$SIGNATURE_OUTPUT" | grep -Eq 'Status: (signed by a certificate trusted by macOS|signed by a certificate trusted by Apple)'; then
+              echo "::error::Package signature is invalid or untrusted: $PACKAGE"
+              exit 1
+            fi
             spctl --assess --type install --verbose=4 "$PACKAGE"
           done
 
