@@ -11,7 +11,7 @@ DST_DIR="$HOME/Library/Input Methods"
 DST="$DST_DIR/$APP_NAME"
 LEGACY_DST="$DST_DIR/$LEGACY_APP_NAME"
 SYSTEM_DST="/Library/Input Methods/$APP_NAME"
-CLEANUP_VERSION="0.1.22"
+CLEANUP_VERSION="0.1.21"
 
 version_at_least() {
     local current="$1"
@@ -99,13 +99,14 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
         /usr/bin/swift "$ROOT/script/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
     fi
     ("$LSREGISTER" -dump | grep -oE "path:.*?Akshara\.app" || true) | sed 's/path:[ \t]*//' | sed 's/ (.*//' | sort -u | while read app_path; do
-        if [ "$app_path" != "$DST" ]; then
-            "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
-        fi
+        "$LSREGISTER" -u "$app_path" >/dev/null 2>&1 || true
     done
     "$LSREGISTER" -u "$LEGACY_DST" >/dev/null 2>&1 || true
     "$LSREGISTER" -u "$SYSTEM_DST" >/dev/null 2>&1 || true
     rm -rf "$DST" "$LEGACY_DST"
+    if [ -d "$SYSTEM_DST" ]; then
+        sudo rm -rf "$SYSTEM_DST"
+    fi
     killall "$APP_PROCESS" 2>/dev/null || true
     killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
 ) &
@@ -116,6 +117,11 @@ mkdir -p "$DST_DIR"
 
 ( cp -R "$SRC" "$DST" ) &
 spin $! "Copying app to Input Methods"
+
+# Keep the generated build bundle out of LaunchServices. macOS discovers any
+# app bundle left in the workspace and exposes its input modes again.
+"$LSREGISTER" -u "$SRC" >/dev/null 2>&1 || true
+rm -rf "$SRC"
 
 (
     /usr/bin/xattr -cr "$DST" 2>/dev/null || true
