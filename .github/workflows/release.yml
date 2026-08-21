@@ -76,7 +76,9 @@ jobs:
           export AKSHARA_NOTARY_KEY="$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
           for architecture in universal arm64 x86_64; do
             AKSHARA_ARCH="$architecture" ./script/package.sh
-            spctl --assess --type install --verbose=4 "dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
+            PACKAGE="dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
+            pkgutil --check-signature "$PACKAGE"
+            spctl --assess --type install --verbose=4 "$PACKAGE"
           done
 
       - name: Publish GitHub release
