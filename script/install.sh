@@ -104,6 +104,9 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
     "$LSREGISTER" -u "$LEGACY_DST" >/dev/null 2>&1 || true
     "$LSREGISTER" -u "$SYSTEM_DST" >/dev/null 2>&1 || true
     rm -rf "$DST" "$LEGACY_DST"
+    if [ -d "$SYSTEM_DST" ]; then
+        sudo rm -rf "$SYSTEM_DST"
+    fi
     killall "$APP_PROCESS" 2>/dev/null || true
     killall "$LEGACY_APP_PROCESS" 2>/dev/null || true
 ) &
@@ -115,14 +118,16 @@ mkdir -p "$DST_DIR"
 ( cp -R "$SRC" "$DST" ) &
 spin $! "Copying app to Input Methods"
 
+# Keep the generated build bundle out of LaunchServices. macOS discovers any
+# app bundle left in the workspace and exposes its input modes again.
+"$LSREGISTER" -u "$SRC" >/dev/null 2>&1 || true
+rm -rf "$SRC"
+
 (
     /usr/bin/xattr -cr "$DST" 2>/dev/null || true
     /usr/bin/xattr -r -d com.apple.provenance "$DST" 2>/dev/null || true
     /usr/bin/codesign --force --sign - "$DST" >/dev/null 2>&1
     /usr/bin/xattr -r -d com.apple.provenance "$DST" 2>/dev/null || true
-    "$LSREGISTER" -u "$DST" >/dev/null 2>&1 || true
-    "$LSREGISTER" -f "$DST" >/dev/null 2>&1 || true
-    /usr/bin/swift "$ROOT/script/enable_akshara.swift" "$DST" >/dev/null 2>&1 || true
 ) &
 spin $! "Signing app bundle"
 

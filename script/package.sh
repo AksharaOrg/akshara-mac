@@ -147,9 +147,6 @@ fi
 
 if [ -d "$APP" ]; then
   /usr/bin/xattr -cr "$APP" 2>/dev/null || true
-  # Replace the old registration after the installer updates the canonical bundle.
-  "$LSREGISTER" -u "$APP" >/dev/null 2>&1 || true
-  "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
 fi
 
 # Remove stale Akshara/CleanIME entries from the logged-in user's HIToolbox
@@ -344,6 +341,7 @@ section "Cleaning up"
   "$LSR" -u "$PKG_ROOT" 2>/dev/null || true
     sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
     rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST"
+    rm -rf "$APP"
   "$LSR" -u "$PKG_ROOT" 2>/dev/null || true
 ) &
 spin $! "Removing intermediate build files"

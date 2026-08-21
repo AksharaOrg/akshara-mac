@@ -11,8 +11,6 @@ func stringProperty(_ source: TISInputSource, _ key: CFString) -> String {
     return ""
   }
   return Unmanaged<CFString>.fromOpaque(raw).takeUnretainedValue() as String
-}
-
 func hasRegisteredInputSource(for bundleID: String) -> Bool {
   let sources = TISCreateInputSourceList(nil, true).takeRetainedValue() as NSArray
   for case let source as TISInputSource in sources {
