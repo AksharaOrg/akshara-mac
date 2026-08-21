@@ -337,7 +337,7 @@ section "Verifying"
 (
     SIGNATURE_OUTPUT=$(/usr/sbin/pkgutil --check-signature "$FINAL_PKG" 2>&1)
     printf '%s\n' "$SIGNATURE_OUTPUT"
-    if ! printf '%s\n' "$SIGNATURE_OUTPUT" | /usr/bin/grep -Eq 'Status: (signed by a certificate trusted by macOS|signed by a certificate trusted by Apple)'; then
+    if ! printf '%s\n' "$SIGNATURE_OUTPUT" | /usr/bin/grep -Eq 'Status: signed by a developer certificate issued by Apple for distribution'; then
       echo "Package signature is not valid or trusted; refusing to publish $FINAL_PKG" >&2
       exit 1
     fi

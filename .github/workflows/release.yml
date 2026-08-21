@@ -79,7 +79,7 @@ jobs:
             PACKAGE="dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
             SIGNATURE_OUTPUT=$(pkgutil --check-signature "$PACKAGE" 2>&1)
             echo "$SIGNATURE_OUTPUT"
-            if ! echo "$SIGNATURE_OUTPUT" | grep -Eq 'Status: (signed by a certificate trusted by macOS|signed by a certificate trusted by Apple)'; then
+            if ! echo "$SIGNATURE_OUTPUT" | grep -Eq 'Status: signed by a developer certificate issued by Apple for distribution'; then
               echo "::error::Package signature is invalid or untrusted: $PACKAGE"
               exit 1
             fi
