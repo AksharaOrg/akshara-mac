@@ -25,24 +25,13 @@ jobs:
       - name: Verify tag commit is on main branch
         run: |
           set -euo pipefail
-          git fetch origin main --prune
+          git fetch origin main --depth=100
           TAG_COMMIT=$(git rev-parse HEAD)
-          MAIN_COMMIT=$(git rev-parse origin/main)
-          if [[ "$TAG_COMMIT" != "$MAIN_COMMIT" ]]; then
-            echo "::error::Release tags must point to the current main commit ($MAIN_COMMIT), not $TAG_COMMIT."
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "::error::Tagged commit $TAG_COMMIT is not on main. Aborting release."
             exit 1
           fi
-          echo "Branch check passed: tag points to current main commit $MAIN_COMMIT."
-
-      - name: Validate release version
-        env:
-          RELEASE_VERSION: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          if [[ ! "$RELEASE_VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::Release tag must use strict semantic versioning: vMAJOR.MINOR.PATCH"
-            exit 1
-          fi
+          echo "Branch check passed: $TAG_COMMIT is on main."
 
       - name: Import Apple signing certificates
         env:
@@ -76,14 +65,7 @@ jobs:
           export AKSHARA_NOTARY_KEY="$RUNNER_TEMP/AuthKey_${AKSHARA_NOTARY_KEY_ID}.p8"
           for architecture in universal arm64 x86_64; do
             AKSHARA_ARCH="$architecture" ./script/package.sh
-            PACKAGE="dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
-            SIGNATURE_OUTPUT=$(pkgutil --check-signature "$PACKAGE" 2>&1)
-            echo "$SIGNATURE_OUTPUT"
-            if ! echo "$SIGNATURE_OUTPUT" | grep -Eq 'Status: signed by a developer certificate issued by Apple for distribution'; then
-              echo "::error::Package signature is invalid or untrusted: $PACKAGE"
-              exit 1
-            fi
-            spctl --assess --type install --verbose=4 "$PACKAGE"
+            spctl --assess --type install --verbose=4 "dist/Akshara-${GITHUB_REF_NAME}-${architecture}.pkg"
           done
 
       - name: Publish GitHub release

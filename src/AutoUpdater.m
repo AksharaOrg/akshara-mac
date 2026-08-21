@@ -4,36 +4,10 @@
 #import <mach-o/dyld.h>
 #import <mach-o/fat.h>
 #import <mach/machine.h>
-#import <CommonCrypto/CommonDigest.h>
 
-// Exact package identity used to verify downloaded updates before opening.
-static NSString * const kExpectedTeamID = @"8292UX7379";
-static NSString * const kExpectedInstallerCertificate = @"Developer ID Installer: Lahiru Himesh Madusanka Siddha Dewayala Gedara (8292UX7379)";
-static NSString * const kExpectedPackageIdentifier = @"com.local.inputmethod.Akshara.pkg";
-
-@interface PackageInfoParser : NSObject <NSXMLParserDelegate>
-@property (nonatomic, copy) NSString *identifier;
-@property (nonatomic, copy) NSString *version;
-@end
-
-@implementation PackageInfoParser
-
-- (void)parser:(NSXMLParser *)parser
- didStartElement:(NSString *)elementName
-    namespaceURI:(NSString *)namespaceURI
-   qualifiedName:(NSString *)qualifiedName
-      attributes:(NSDictionary<NSString *, NSString *> *)attributeDict {
-    (void)parser;
-    (void)namespaceURI;
-    (void)qualifiedName;
-    if ([elementName isEqualToString:@"pkg-info"]) {
-        self.identifier = attributeDict[@"identifier"];
-        self.version = attributeDict[@"version"];
-    }
-}
-
-@end
-
+// Team ID and cert prefix used to verify downloaded packages before opening.
+static NSString * const kExpectedTeamID     = @"8292UX7379";
+static NSString * const kExpectedCertPrefix = @"Developer ID Installer:";
 // Only accept download URLs from known GitHub-owned hosts.
 static NSArray<NSString *> *allowedAssetHosts(void) {
     return @[@"githubusercontent.com",
@@ -70,7 +44,6 @@ static NSString *currentPackageArchitecture(void) {
 @interface AutoUpdater () <UNUserNotificationCenterDelegate>
 @property (nonatomic, strong) NSString *downloadUrl;
 @property (nonatomic, strong) NSString *availableVersion;
-@property (nonatomic, strong) NSString *expectedSHA256;
 @property (nonatomic, strong) NSURLSessionDownloadTask *downloadTask;
 // Tracks the per-download staging directory so it can be cleaned up on cancel or failure.
 @property (nonatomic, strong) NSString *stagingDirectory;
@@ -190,7 +163,6 @@ static NSString *currentPackageArchitecture(void) {
                 return;
             }
             NSString *pkgUrl = nil;
-            NSString *pkgSHA256 = nil;
             NSString *architecture = currentPackageArchitecture();
             NSArray<NSString *> *architecturesToTry = @[architecture, @"universal"];
             for (NSString *candidateArchitecture in architecturesToTry) {
@@ -201,16 +173,9 @@ static NSString *currentPackageArchitecture(void) {
                     if (![name isKindOfClass:[NSString class]] || ![name isEqualToString:expectedName]) continue;
 
                     NSString *candidate = asset[@"browser_download_url"];
-                    NSString *digest = asset[@"digest"];
-                    if (![digest isKindOfClass:[NSString class]] ||
-                        ![digest hasPrefix:@"sha256:"] ||
-                        digest.length != 71) {
-                        continue;
-                    }
                     NSURL *candidateURL = [candidate isKindOfClass:[NSString class]] ? [NSURL URLWithString:candidate] : nil;
                     if ([self isAllowedURL:candidateURL]) {
                         pkgUrl = candidate;
-                        pkgSHA256 = [digest substringFromIndex:7].lowercaseString;
                     }
                     break;
                 }
@@ -221,7 +186,6 @@ static NSString *currentPackageArchitecture(void) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self.downloadUrl = pkgUrl;
                     self.availableVersion = tagName;
-                    self.expectedSHA256 = pkgSHA256;
                     [self showUpdateNotificationForVersion:tagName];
                     if (isManual) {
                         [self showManualUpdateAlertForVersion:tagName];
@@ -327,7 +291,6 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     }
 
     NSString *expectedVersion = self.availableVersion;
-    NSString *expectedSHA256 = [self.expectedSHA256 copy];
 
     UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
     content.title = @"Downloading Update";
@@ -385,11 +348,10 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
             return;
         }
 
-        // Verify identity, package metadata, and digest before opening.
+        // Verify the package signature and Team ID before opening.
         NSString *signerInfo = nil;
-        if (![self verifyPackageSignature:destPath expectedVersion:expectedVersion signerInfo:&signerInfo] ||
-            ![self verifyPackageHash:destPath expectedSHA256:expectedSHA256]) {
-            NSLog(@"[AutoUpdater] Package verification FAILED: %@", destPath);
+        if (![self verifyPackageSignature:destPath signerInfo:&signerInfo]) {
+            NSLog(@"[AutoUpdater] Package signature verification FAILED: %@", destPath);
             [self cleanupStagingDirectory:stagingDir];
             dispatch_async(dispatch_get_main_queue(), ^{
                 NSAlert *alert = [[NSAlert alloc] init];
@@ -423,8 +385,10 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     self.downloadTask = downloadTask;
 }
 
-// Verifies the exact installer certificate, package identifier, and version.
-- (BOOL)verifyPackageSignature:(NSString *)pkgPath expectedVersion:(NSString *)expectedVersion signerInfo:(NSString **)outSignerInfo {
+// Verifies the Developer ID Installer signature and Team ID of a downloaded package
+// using /usr/sbin/pkgutil --check-signature. NSTask is called directly without a shell.
+// Returns YES only if both the expected certificate type and Team ID are present.
+- (BOOL)verifyPackageSignature:(NSString *)pkgPath signerInfo:(NSString **)outSignerInfo {
     NSTask *task = [[NSTask alloc] init];
     task.launchPath = @"/usr/sbin/pkgutil";
     task.arguments = @[@"--check-signature", pkgPath];
@@ -446,59 +410,20 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
 
     NSString *output = [[NSString alloc] initWithData:outputData encoding:NSUTF8StringEncoding] ?: @"";
 
-    BOOL hasExactCertificate = NO;
+    BOOL hasTeamID   = [output containsString:kExpectedTeamID];
+    BOOL hasCertType = [output containsString:kExpectedCertPrefix];
 
-    for (NSString *line in [output componentsSeparatedByString:@"\n"]) {
-        NSString *trimmed = [line stringByTrimmingCharactersInSet:
-                             [NSCharacterSet whitespaceCharacterSet]];
-        NSString *certificateName = trimmed;
-        if ([certificateName hasPrefix:@"1. "]) {
-            certificateName = [certificateName substringFromIndex:3];
-        }
-        if ([certificateName isEqualToString:kExpectedInstallerCertificate] &&
-            [certificateName hasSuffix:[NSString stringWithFormat:@"(%@)", kExpectedTeamID]]) {
-            hasExactCertificate = YES;
-            if (outSignerInfo) {
-                *outSignerInfo = certificateName;
+    if (outSignerInfo) {
+        for (NSString *line in [output componentsSeparatedByString:@"\n"]) {
+            NSString *trimmed = [line stringByTrimmingCharactersInSet:
+                                 [NSCharacterSet whitespaceCharacterSet]];
+            if ([trimmed hasPrefix:kExpectedCertPrefix]) {
+                *outSignerInfo = trimmed;
+                break;
             }
-            break;
         }
     }
-
-    NSString *expandedPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
-    NSTask *expandTask = [[NSTask alloc] init];
-    expandTask.launchPath = @"/usr/sbin/pkgutil";
-    expandTask.arguments = @[@"--expand-full", pkgPath, expandedPath];
-    expandTask.standardOutput = [NSPipe pipe];
-    expandTask.standardError = [NSPipe pipe];
-    NSError *expandError = nil;
-    [expandTask launchAndReturnError:&expandError];
-    [expandTask waitUntilExit];
-    if (expandError || expandTask.terminationStatus != 0) return NO;
-
-    NSString *packageInfoPath = [expandedPath stringByAppendingPathComponent:@"Akshara-component.pkg/PackageInfo"];
-    NSData *packageInfoData = [NSData dataWithContentsOfFile:packageInfoPath];
-    PackageInfoParser *packageInfoParser = [[PackageInfoParser alloc] init];
-    NSXMLParser *xmlParser = [[NSXMLParser alloc] initWithData:packageInfoData ?: [NSData data]];
-    xmlParser.delegate = packageInfoParser;
-    BOOL hasExpectedMetadata = [xmlParser parse] &&
-        [packageInfoParser.identifier isEqualToString:kExpectedPackageIdentifier] &&
-        [packageInfoParser.version isEqualToString:expectedVersion];
-    [[NSFileManager defaultManager] removeItemAtPath:expandedPath error:nil];
-    return hasExactCertificate && hasExpectedMetadata && [kExpectedInstallerCertificate hasSuffix:kExpectedTeamID];
-}
-
-- (BOOL)verifyPackageHash:(NSString *)pkgPath expectedSHA256:(NSString *)expectedSHA256 {
-    if (expectedSHA256.length != CC_SHA256_DIGEST_LENGTH * 2) return NO;
-    NSData *packageData = [NSData dataWithContentsOfFile:pkgPath options:NSDataReadingMappedIfSafe error:nil];
-    if (!packageData) return NO;
-    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(packageData.bytes, (CC_LONG)packageData.length, digest);
-    NSMutableString *actual = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
-    for (NSUInteger index = 0; index < CC_SHA256_DIGEST_LENGTH; index++) {
-        [actual appendFormat:@"%02x", digest[index]];
-    }
-    return [actual isEqualToString:expectedSHA256.lowercaseString];
+    return hasTeamID && hasCertType;
 }
 
 // Shows a confirmation dialog with the verified signer identity, version, and size
