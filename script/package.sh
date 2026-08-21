@@ -5,6 +5,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Akshara"
 BUNDLE_ID="com.local.inputmethod.Akshara"
 VERSION="${AKSHARA_VERSION:-0.1.0}"
+if [[ ! "$VERSION" =~ ^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+  echo "Invalid AKSHARA_VERSION '$VERSION'; expected vMAJOR.MINOR.PATCH" >&2
+  exit 2
+fi
+PACKAGE_VERSION="${VERSION#v}"
 ARCH="${AKSHARA_ARCH:-universal}"
 APP_SIGN_IDENTITY="${AKSHARA_APP_SIGN_IDENTITY:--}"
 PKG_SIGN_IDENTITY="${AKSHARA_PKG_SIGN_IDENTITY:-}"
@@ -102,8 +107,8 @@ spin $! "Cleaning previous build artifacts"
 section "Staging app bundle"
 (
     cp -R "$APP" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app"
-    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
-    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $PACKAGE_VERSION" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $PACKAGE_VERSION" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
     /usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
     /usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
     /usr/bin/find "$PKG_ROOT" -name '._*' -delete
@@ -280,7 +285,7 @@ section "Building installer package"
       --component-plist "$COMPONENT_PLIST" \
       --scripts "$PKG_SCRIPTS" \
       --identifier "$BUNDLE_ID.pkg" \
-      --version "$VERSION" \
+      --version "$PACKAGE_VERSION" \
       --install-location "/" \
       "$COMPONENT_PKG" 2>&1
 
@@ -297,7 +302,7 @@ section "Building installer package"
   <choice id="akshara" title="Akshara Sinhala Input Method">
     <pkg-ref id="$BUNDLE_ID.pkg"/>
   </choice>
-  <pkg-ref id="$BUNDLE_ID.pkg" version="$VERSION">$(basename "$COMPONENT_PKG")</pkg-ref>
+  <pkg-ref id="$BUNDLE_ID.pkg" version="$PACKAGE_VERSION">$(basename "$COMPONENT_PKG")</pkg-ref>
 </installer-gui-script>
 XML
 
