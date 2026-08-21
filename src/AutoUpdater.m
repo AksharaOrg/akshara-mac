@@ -353,16 +353,6 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
         if (![self verifyPackageSignature:destPath signerInfo:&signerInfo]) {
             NSLog(@"[AutoUpdater] Package signature verification FAILED: %@", destPath);
             [self cleanupStagingDirectory:stagingDir];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                NSAlert *alert = [[NSAlert alloc] init];
-                alert.alertStyle = NSAlertStyleCritical;
-                alert.messageText = @"Update Blocked — Signature Verification Failed";
-                alert.informativeText =
-                    @"The downloaded update package could not be verified. "
-                     "It may have been tampered with. The update has been cancelled for your safety.";
-                [alert addButtonWithTitle:@"OK"];
-                [alert runModal];
-            });
             return;
         }
         NSLog(@"[AutoUpdater] Signature OK — %@", signerInfo);
