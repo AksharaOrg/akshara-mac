@@ -130,16 +130,72 @@ cat >"$PKG_SCRIPTS/postinstall" <<'SCRIPT'
 set -eu
 
 APP="/Library/Input Methods/Akshara.app"
+USER_APP_NAME="Akshara.app"
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+
+# Remove the old per-user bundle so LaunchServices cannot expose two copies of
+# the same input source after switching from the source installer to a pkg.
+CONSOLE_USER="$(/usr/bin/stat -f%Su /dev/console)"
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
+  USER_HOME="$(/usr/bin/dscl . -read /Users/"$CONSOLE_USER" NFSHomeDirectory | /usr/bin/awk '{print $2}')"
+  USER_APP="$USER_HOME/Library/Input Methods/$USER_APP_NAME"
+  if [ -d "$USER_APP" ]; then
+    "$LSREGISTER" -u "$USER_APP" >/dev/null 2>&1 || true
+    /bin/rm -rf "$USER_APP"
+  fi
+fi
 
 if [ -d "$APP" ]; then
   /usr/bin/xattr -cr "$APP" 2>/dev/null || true
+  # Replace the old registration after the installer updates the canonical bundle.
+  "$LSREGISTER" -u "$APP" >/dev/null 2>&1 || true
+  "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
+fi
+
+# Remove stale Akshara/CleanIME entries from the logged-in user's HIToolbox
+# preferences before the new bundle is registered.
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
+  CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
+  CLEANUP_SOURCE="$(/usr/bin/mktemp /tmp/akshara-cleanup.XXXXXX.swift)"
+  /bin/cat >"$CLEANUP_SOURCE" <<'SWIFT'
+import Foundation
+
+let knownPrefixes = [
+  "com.local.inputmethod.Akshara",
+  "com.local.inputmethod.SinhalaCleanIME",
+  "Akshara",
+  "SinhalaCleanIME",
+  "CleanIME"
+]
+
+func isStale(_ entry: [String: Any]) -> Bool {
+  ["InputSourceID", "Bundle ID", "Input Mode"].contains { key in
+    guard let value = entry[key] as? String else { return false }
+    return knownPrefixes.contains { value == $0 || value.hasPrefix($0) || value.localizedCaseInsensitiveContains($0) }
+  }
+}
+
+let defaults = UserDefaults.standard
+var domain = defaults.persistentDomain(forName: "com.apple.HIToolbox") ?? [:]
+for key in ["AppleEnabledInputSources", "AppleSelectedInputSources", "AppleInputSourceHistory"] {
+  if let entries = domain[key] as? [Any] {
+    domain[key] = entries.filter { entry in
+      guard let dictionary = entry as? [String: Any] else { return true }
+      return !isStale(dictionary)
+    }
+  }
+}
+defaults.setPersistentDomain(domain, forName: "com.apple.HIToolbox")
+defaults.synchronize()
+SWIFT
+  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/swift "$CLEANUP_SOURCE" >/dev/null 2>&1 || true
+  /bin/rm -f "$CLEANUP_SOURCE"
 fi
 
 /usr/bin/killall Akshara >/dev/null 2>&1 || true
 /usr/bin/killall cfprefsd >/dev/null 2>&1 || true
 
 # Show the setup guide to the logged-in user after a new installation.
-CONSOLE_USER="$(/usr/bin/stat -f%Su /dev/console)"
 if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
   CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
   /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open -n "$APP" >/dev/null 2>&1 || true
