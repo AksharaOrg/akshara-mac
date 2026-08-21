@@ -10,6 +10,30 @@
 static NSString * const kExpectedTeamID = @"8292UX7379";
 static NSString * const kExpectedInstallerCertificate = @"Developer ID Installer: Lahiru Himesh Madusanka Siddha Dewayala Gedara (8292UX7379)";
 static NSString * const kExpectedPackageIdentifier = @"com.local.inputmethod.Akshara.pkg";
+
+@interface PackageInfoParser : NSObject <NSXMLParserDelegate>
+@property (nonatomic, copy) NSString *identifier;
+@property (nonatomic, copy) NSString *version;
+@end
+
+@implementation PackageInfoParser
+
+- (void)parser:(NSXMLParser *)parser
+ didStartElement:(NSString *)elementName
+    namespaceURI:(NSString *)namespaceURI
+   qualifiedName:(NSString *)qualifiedName
+      attributes:(NSDictionary<NSString *, NSString *> *)attributeDict {
+    (void)parser;
+    (void)namespaceURI;
+    (void)qualifiedName;
+    if ([elementName isEqualToString:@"pkg-info"]) {
+        self.identifier = attributeDict[@"identifier"];
+        self.version = attributeDict[@"version"];
+    }
+}
+
+@end
+
 // Only accept download URLs from known GitHub-owned hosts.
 static NSArray<NSString *> *allowedAssetHosts(void) {
     return @[@"githubusercontent.com",
@@ -441,21 +465,26 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
         }
     }
 
-    NSTask *infoTask = [[NSTask alloc] init];
-    infoTask.launchPath = @"/usr/sbin/pkgutil";
-    infoTask.arguments = @[@"--pkg-info-plist", pkgPath];
-    NSPipe *infoPipe = [NSPipe pipe];
-    infoTask.standardOutput = infoPipe;
-    infoTask.standardError = [NSPipe pipe];
-    NSError *infoError = nil;
-    [infoTask launchAndReturnError:&infoError];
-    if (infoError) return NO;
-    NSData *plistData = [infoPipe.fileHandleForReading readDataToEndOfFile];
-    [infoTask waitUntilExit];
-    NSDictionary *packageInfo = [NSPropertyListSerialization propertyListWithData:plistData options:NSPropertyListImmutable format:nil error:nil];
-    BOOL hasExpectedMetadata = infoTask.terminationStatus == 0 &&
-        [packageInfo[@"identifier"] isEqualToString:kExpectedPackageIdentifier] &&
-        [packageInfo[@"version"] isEqualToString:expectedVersion];
+    NSString *expandedPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    NSTask *expandTask = [[NSTask alloc] init];
+    expandTask.launchPath = @"/usr/sbin/pkgutil";
+    expandTask.arguments = @[@"--expand-full", pkgPath, expandedPath];
+    expandTask.standardOutput = [NSPipe pipe];
+    expandTask.standardError = [NSPipe pipe];
+    NSError *expandError = nil;
+    [expandTask launchAndReturnError:&expandError];
+    [expandTask waitUntilExit];
+    if (expandError || expandTask.terminationStatus != 0) return NO;
+
+    NSString *packageInfoPath = [expandedPath stringByAppendingPathComponent:@"Akshara-component.pkg/PackageInfo"];
+    NSData *packageInfoData = [NSData dataWithContentsOfFile:packageInfoPath];
+    PackageInfoParser *packageInfoParser = [[PackageInfoParser alloc] init];
+    NSXMLParser *xmlParser = [[NSXMLParser alloc] initWithData:packageInfoData ?: [NSData data]];
+    xmlParser.delegate = packageInfoParser;
+    BOOL hasExpectedMetadata = [xmlParser parse] &&
+        [packageInfoParser.identifier isEqualToString:kExpectedPackageIdentifier] &&
+        [packageInfoParser.version isEqualToString:expectedVersion];
+    [[NSFileManager defaultManager] removeItemAtPath:expandedPath error:nil];
     return hasExactCertificate && hasExpectedMetadata && [kExpectedInstallerCertificate hasSuffix:kExpectedTeamID];
 }
 
