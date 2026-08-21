@@ -61,41 +61,45 @@ Whether you prefer rapid **Smart Phonetic**, standard **Singlish Phonetic**, or 
 Smart Phonetic simplifies typing complex Sinhala glyphs into intuitive Latin keystrokes:
 
 #### 🔹 Vowels (ස්වර)
-| Sinhala | Keystrokes | Sinhala | Keystrokes | Sinhala | Keystrokes |
-| :---: | :--- | :---: | :--- | :---: | :--- |
-| **අ** | `a` | **ආ** | `aa` | **ඇ** | `A` |
-| **ඈ** | `Aa` / `AA` | **ඉ** | `i` | **ඊ** | `ii` / `I` |
-| **උ** | `u` / `U` | **ඌ** | `uu` / `Uu` / `UU` | **ඍ** | `R` |
-| **ඎ** | `Ru` | **එ** | `e` | **ඒ** | `ee` |
-| **ඓ** | `ai` / `E` | **ඔ** | `o` / `O` | **ඕ** | `oo` / `Oo` / `OO` |
-| **ඖ** | `au` / `ou` | | | | |
+
+| Sinhala | Keystrokes  | Sinhala | Keystrokes         | Sinhala | Keystrokes         |
+| :-----: | :---------- | :-----: | :----------------- | :-----: | :----------------- |
+|  **අ**  | `a`         |  **ආ**  | `aa`               |  **ඇ**  | `A`                |
+|  **ඈ**  | `Aa` / `AA` |  **ඉ**  | `i`                |  **ඊ**  | `ii` / `I`         |
+|  **උ**  | `u` / `U`   |  **ඌ**  | `uu` / `Uu` / `UU` |  **ඍ**  | `R`                |
+|  **ඎ**  | `Ru`        |  **එ**  | `e`                |  **ඒ**  | `ee`               |
+|  **ඓ**  | `ai` / `E`  |  **ඔ**  | `o` / `O`          |  **ඕ**  | `oo` / `Oo` / `OO` |
+|  **ඖ**  | `au` / `ou` |         |                    |         |                    |
 
 #### 🔹 Consonants (ව්‍යංජන)
-| Sinhala | Keystrokes | Sinhala | Keystrokes | Sinhala | Keystrokes |
-| :---: | :--- | :---: | :--- | :---: | :--- |
-| **ක** | `ka` / `ca` | **ග** | `ga` | **ච** | `cha` |
-| **ජ** | `ja` | **ට** | `ta` | **ඩ** | `da` |
-| **ත** | `tha` | **ද** | `dha` / `q` | **න** | `na` |
-| **ණ** | `N` | **ප** | `pa` | **බ** | `ba` |
-| **ම** | `ma` | **ය** | `ya` | **ර** | `ra` |
-| **ල** | `la` | **ළ** | `L` | **ව** | `w` / `v` / `Wa` / `Va` |
-| **ස** | `sa` | **ශ** | `sha` | **ෂ** | `Sa` / `Sha` |
-| **හ** | `ha` | **ෆ** | `fa` | **ඞ** | `X` |
+
+| Sinhala | Keystrokes  | Sinhala | Keystrokes  | Sinhala | Keystrokes              |
+| :-----: | :---------- | :-----: | :---------- | :-----: | :---------------------- |
+|  **ක**  | `ka` / `ca` |  **ග**  | `ga`        |  **ච**  | `cha`                   |
+|  **ජ**  | `ja`        |  **ට**  | `ta`        |  **ඩ**  | `da`                    |
+|  **ත**  | `tha`       |  **ද**  | `dha` / `q` |  **න**  | `na`                    |
+|  **ණ**  | `N`         |  **ප**  | `pa`        |  **බ**  | `ba`                    |
+|  **ම**  | `ma`        |  **ය**  | `ya`        |  **ර**  | `ra`                    |
+|  **ල**  | `la`        |  **ළ**  | `L`         |  **ව**  | `w` / `v` / `Wa` / `Va` |
+|  **ස**  | `sa`        |  **ශ**  | `sha`       |  **ෂ**  | `Sa` / `Sha`            |
+|  **හ**  | `ha`        |  **ෆ**  | `fa`        |  **ඞ**  | `X`                     |
 
 #### 🔹 Mahaprana (මහාප්‍රාණ) & Sanyaka (සඤ්ඤක) Consonants
-| Type | Sinhala | Keystrokes | Type | Sinhala | Keystrokes |
-| :--- | :---: | :--- | :--- | :---: | :--- |
-| **Mahaprana** | **ඛ** | `kha` / `Ka` / `Ca` | **Mahaprana** | **ඝ** | `gha` / `Ga` |
-| **Mahaprana** | **ඡ** | `chha` | **Mahaprana** | **ඣ** | `Ja` |
-| **Mahaprana** | **ඨ** | `Ta` | **Mahaprana** | **ඪ** | `Da` |
-| **Mahaprana** | **ථ** | `thha` | **Mahaprana** | **ධ** | `dhha` |
-| **Mahaprana** | **ඵ** | `pha` / `Pa` | **Mahaprana** | **භ** | `bha` |
-| **Sanyaka** | **ඟ** | `zga` | **Sanyaka** | **ඦ** | `zja` |
-| **Sanyaka** | **ඬ** | `zda` | **Sanyaka** | **ඳ** | `zdha` / `zqa` |
-| **Sanyaka** | **ඤ** | `zka` | **Sanyaka** | **ඥ** | `zha` |
-| **Sanyaka** | **ඹ** | `Ba` | | | |
+
+| Type          | Sinhala | Keystrokes          | Type          | Sinhala | Keystrokes     |
+| :------------ | :-----: | :------------------ | :------------ | :-----: | :------------- |
+| **Mahaprana** |  **ඛ**  | `kha` / `Ka` / `Ca` | **Mahaprana** |  **ඝ**  | `gha` / `Ga`   |
+| **Mahaprana** |  **ඡ**  | `chha`              | **Mahaprana** |  **ඣ**  | `Ja`           |
+| **Mahaprana** |  **ඨ**  | `Ta`                | **Mahaprana** |  **ඪ**  | `Da`           |
+| **Mahaprana** |  **ථ**  | `thha`              | **Mahaprana** |  **ධ**  | `dhha`         |
+| **Mahaprana** |  **ඵ**  | `pha` / `Pa`        | **Mahaprana** |  **භ**  | `bha`          |
+| **Sanyaka**   |  **ඟ**  | `zga`               | **Sanyaka**   |  **ඦ**  | `zja`          |
+| **Sanyaka**   |  **ඬ**  | `zda`               | **Sanyaka**   |  **ඳ**  | `zdha` / `zqa` |
+| **Sanyaka**   |  **ඤ**  | `zka`               | **Sanyaka**   |  **ඥ**  | `zha`          |
+| **Sanyaka**   |  **ඹ**  | `Ba`                |               |         |                |
 
 #### 🔹 Vowel Signs, Modifiers & Conjuncts
+
 - **Gayanukitta (ෘ / ෲ)**: `ru` ➔ `ෘ`, `ruu` ➔ `ෲ` (e.g. `kru` ➔ `කෘ`)
 - **Anusvaraya (ං)**: `x`, `M`, or `zn` (e.g. `sixhala` / `siMhala` ➔ `සිංහල`)
 - **Visargaya (ඃ)**: `H` (e.g. `duHkha` ➔ `දුඃඛ`)
@@ -108,6 +112,7 @@ Smart Phonetic simplifies typing complex Sinhala glyphs into intuitive Latin key
 ### 2. Classic Phonetic Mode
 
 Provides standard romanized Sinhala transliteration:
+
 - `amma` ➔ `අම්ම`
 - `mama` ➔ `මම`
 - `sri` ➔ `ස්රි`
@@ -138,23 +143,24 @@ Full adherence to the official Sri Lanka Standard **SLS 1134** specification wit
 The SLS mode also supports the public Wijesekara/SLS control symbols for yansaya, rakaransaya, repaya, join/touching letters, sanyakaya forms, visargaya, kunddaliya, non-breaking/invisible spaces, and common AltGr entries.
 
 #### 🔹 Wijesekara Key Shortcuts & Controls
-| Key Combination | Output / Function | Description |
-| :--- | :---: | :--- |
-| `'` (Single Quote) | `.` | Full stop (period) |
-| `z` | `'` | Apostrophe |
-| `.` (Period key) | `ග` | Sinhala consonant Ga |
-| `]` | `;` | Semicolon |
-| `\` (Backslash) | `Bandhi Akuru` | Joining / touching letters |
-| `` ` `` (Grave accent) | `◌්‍ර` | Rakaransaya |
-| `~` (Shift + `` ` ``) | `ර්‍` | Repaya |
-| `⌥ Option` + `.` | `ඟ` | Sanyaka Ga |
-| `⌥ Option` + `o` | `ඳ` | Sanyaka Dha |
-| `⌥ Option` + `v` | `ඬ` | Sanyaka Da |
-| `⌥ Option` + `c` | `ඦ` | Sanyaka Ja |
-| `⌥ Option` + `x` | `ඃ` | Visargaya |
-| `⌥ Option` + `'` | `෴` | Kunddaliya |
-| `⌥ Option` + `,` | `ඏ` | Sinhala vowel sign Kombuva Ha Diga Aela-Pilla |
-| `⌥ Option` + `Space` | `‌` | Zero-Width Non-Joiner (ZWNJ) |
+
+| Key Combination        | Output / Function | Description                                   |
+| :--------------------- | :---------------: | :-------------------------------------------- |
+| `'` (Single Quote)     |        `.`        | Full stop (period)                            |
+| `z`                    |        `'`        | Apostrophe                                    |
+| `.` (Period key)       |        `ග`        | Sinhala consonant Ga                          |
+| `]`                    |        `;`        | Semicolon                                     |
+| `\` (Backslash)        |  `Bandhi Akuru`   | Joining / touching letters                    |
+| `` ` `` (Grave accent) |      `◌්‍ර`       | Rakaransaya                                   |
+| `~` (Shift + `` ` ``)  |       `ර්‍`       | Repaya                                        |
+| `⌥ Option` + `.`       |        `ඟ`        | Sanyaka Ga                                    |
+| `⌥ Option` + `o`       |        `ඳ`        | Sanyaka Dha                                   |
+| `⌥ Option` + `v`       |        `ඬ`        | Sanyaka Da                                    |
+| `⌥ Option` + `c`       |        `ඦ`        | Sanyaka Ja                                    |
+| `⌥ Option` + `x`       |        `ඃ`        | Visargaya                                     |
+| `⌥ Option` + `'`       |        `෴`        | Kunddaliya                                    |
+| `⌥ Option` + `,`       |        `ඏ`        | Sinhala vowel sign Kombuva Ha Diga Aela-Pilla |
+| `⌥ Option` + `Space`   |        `‌`        | Zero-Width Non-Joiner (ZWNJ)                  |
 
 ---
 
@@ -171,6 +177,7 @@ The SLS mode also supports the public Wijesekara/SLS control symbols for yansaya
 ### Option B: Build & Install from Source
 
 #### Requirements
+
 - macOS 12.0 (Monterey) or later
 - Xcode Command Line Tools (`xcode-select --install`)
 - Apple Developer ID certificates (only required for signed release packages)
@@ -313,6 +320,7 @@ akshara-mac/
 ## 🤝 Contributing
 
 Contributions, bug reports, and suggestions are welcome!
+
 - Review [CONTRIBUTING.md](CONTRIBUTING.md) for development workflows.
 - Run `./script/test.sh` to verify all transliterator and parser stress tests pass before submitting pull requests.
 
