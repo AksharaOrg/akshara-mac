@@ -339,9 +339,12 @@ spin $! "Verifying package signature"
 section "Cleaning up"
 (
     LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+    "$LSR" -u "$APP" 2>/dev/null || true
     "$LSR" -u "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+  "$LSR" -u "$PKG_ROOT" 2>/dev/null || true
     sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
     rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST"
+  "$LSR" -u "$PKG_ROOT" 2>/dev/null || true
 ) &
 spin $! "Removing intermediate build files"
 

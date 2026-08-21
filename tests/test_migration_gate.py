@@ -14,7 +14,10 @@ assert 'launchctl asuser' in package_script, 'package.sh should clean the logged
 assert 'AppleEnabledInputSources' in package_script, 'package.sh should clean enabled input-source entries'
 assert '"$LSREGISTER" -u "$DST"' in install_script, 'install.sh should unregister the canonical user bundle before replacement'
 assert '"$LSREGISTER" -f "$DST"' in install_script, 'install.sh should register only the canonical user bundle'
+assert 'enable_akshara.swift" "$DST"' in install_script, 'install.sh should normalize TIS registrations'
 assert '"$LSREGISTER" -f "$APP"' in package_script, 'package.sh should register only the canonical system bundle'
+assert '"$LSR" -u "$PKG_ROOT"' in package_script, 'package.sh should unregister the generated package root'
+assert '"$LSR" -u "$APP"' in package_script, 'package.sh should unregister the generated dist app'
 assert 'sourceID.hasPrefix(bundleID + ".")' in enable_script, 'registration should recognize component input-source IDs'
 assert '!hasRegisteredInputSource(for: bundleID)' in enable_script, 'registration should be idempotent'
 

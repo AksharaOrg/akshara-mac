@@ -122,6 +122,7 @@ spin $! "Copying app to Input Methods"
     /usr/bin/xattr -r -d com.apple.provenance "$DST" 2>/dev/null || true
     "$LSREGISTER" -u "$DST" >/dev/null 2>&1 || true
     "$LSREGISTER" -f "$DST" >/dev/null 2>&1 || true
+    /usr/bin/swift "$ROOT/script/enable_akshara.swift" "$DST" >/dev/null 2>&1 || true
 ) &
 spin $! "Signing app bundle"
 
