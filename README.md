@@ -38,7 +38,7 @@ Whether you prefer rapid **Smart Phonetic**, standard **Singlish Phonetic**, or 
 - **Quick Guide & Cheat Sheet**: Instant access to phonetic rules and vowel signs directly from the macOS input menu bar.
 - **Double-Space Period**: Pressing `Space` twice automatically inserts `. ` across all input modes.
 - **Built-in Auto Updater**: Background release checks and convenient in-app update prompts via GitHub Releases.
-- **Clean, Secure & Private**: No analytics, keylogging, or telemetry. The built-in updater contacts the Akshara GitHub Releases API and downloads signed update packages; opening the GitHub repository from the welcome screen also opens an external web page.
+- **Clean, Secure & Private**: Fully sandboxed with no analytics, keylogging, telemetry, or external network requests.
 
 ---
 
