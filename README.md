@@ -336,6 +336,3 @@ Many thanks to all the [Akshara contributors](https://github.com/sdglhm/akshara/
 
 Akshara is released under the [MIT License](https://opensource.org/license/mit).
 See [LICENSE](LICENSE).
-
-## Stargazers
-[![Stargazers repo roster for @AksharaOrg/akshara-mac](https://reporoster.com/stars/AksharaOrg/akshara-mac)](https://github.com/AksharaOrg/akshara-mac/stargazers)
