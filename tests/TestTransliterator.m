@@ -198,6 +198,7 @@ int main(void) {
     ok = expectSLSOrder(@"කෂ", @"ක්‍ෂ") && ok;
     ok = expectSLSOrder(@"", @"‌්‍ර") && ok;
     ok = expectSLSOrder(@"ෙ", @"‌ෙ") && ok;
+    ok = expectSLSOrder(@"ෙෙ", @"‌ෙ‌ෙ") && ok;
     ok = expectSLSKey(@"o", NO, YES, @"ඳ") && ok;
     ok = expectSLSKey(@".", NO, YES, @"ඟ") && ok;
     ok = expectSLSKey(@"'", NO, NO, @".") && ok;
