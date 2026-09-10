@@ -180,6 +180,7 @@
 @property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
 - (void)updateCustomComposition;
+- (void)updateCustomCompositionWithString:(NSString *)newString;
 - (void)appendInputToComposition:(NSString *)input client:(id)sender;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
@@ -349,6 +350,16 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return result;
 }
 
+// The marked string hides a trailing kombuwa that is still waiting for its
+// consonant. A commit must keep it: the sign is real input and belongs in the
+// client as a standalone ZWNJ + vowel sign.
+- (NSString *)committedString {
+  if ([self currentInputMode] == AksharaInputModeWijesekara) {
+    return [SinhalaTransliterator normalizeSLSInputOrder:self.rawBuffer];
+  }
+  return [self markedString];
+}
+
 - (void)appendInputToComposition:(NSString *)input client:(id)sender {
   if (input.length == 0) {
     return;
@@ -379,20 +390,23 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
-  NSString *commitStr = [self markedString];
-  [self.rawBuffer setString:@""];
-  self.lastCommittedString = @"";
-  
+  NSString *commitStr = [self committedString];
+
   NSString *bundleId = nil;
   if ([sender respondsToSelector:@selector(bundleIdentifier)]) {
       bundleId = [sender bundleIdentifier];
   }
   if ([bundleId.lowercaseString containsString:@"adobe"]) {
+      [self.rawBuffer setString:@""];
+      self.lastCommittedString = @"";
       if (commitStr.length > 0) {
           [sender insertText:commitStr replacementRange:NSMakeRange(NSNotFound, 0)];
       }
   } else {
-      [self updateCustomComposition];
+      // Flush whatever the marked form was hiding before dropping the buffer.
+      [self updateCustomCompositionWithString:commitStr];
+      [self.rawBuffer setString:@""];
+      self.lastCommittedString = @"";
   }
   if (suffix.length > 0) {
     [self insertString:suffix client:sender];
@@ -817,14 +831,17 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (void)updateCustomComposition {
+  [self updateCustomCompositionWithString:[self markedString]];
+}
+
+- (void)updateCustomCompositionWithString:(NSString *)newString {
   id client = [self client];
   if (!client) {
     return;
   }
-  
+
   NSString *oldString = self.lastCommittedString ?: @"";
-  NSString *newString = [self markedString];
-  
+
   NSString *bundleId = nil;
   if ([client respondsToSelector:@selector(bundleIdentifier)]) {
       bundleId = [client bundleIdentifier];
