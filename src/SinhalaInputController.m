@@ -173,14 +173,8 @@
 @property(nonatomic, assign) NSInteger appliedKeyboardLayoutMode;
 @property(nonatomic, assign) BOOL hasAppliedKeyboardLayoutMode;
 @property(nonatomic, strong) NSDate *lastSpaceTime;
-@property(nonatomic, strong) NSString *lastCommittedString;
-@property(nonatomic, assign) NSUInteger expectedCursorLocation;
-@property(nonatomic, assign) NSUInteger expectedCursorLocationGraphemes;
-@property(nonatomic, assign) NSRange lastReportedRange;
 @property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
-- (void)updateCustomComposition;
-- (void)updateCustomCompositionWithString:(NSString *)newString;
 - (void)appendInputToComposition:(NSString *)input client:(id)sender;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
@@ -193,10 +187,6 @@ static const NSUInteger kMaxRawBufferLength = 256;
   self = [super initWithServer:server delegate:delegate client:inputClient];
   if (self) {
     _rawBuffer = [NSMutableString string];
-    _lastCommittedString = @"";
-    _expectedCursorLocation = NSNotFound;
-    _expectedCursorLocationGraphemes = NSNotFound;
-    _lastReportedRange = NSMakeRange(NSNotFound, 0);
     [[AutoUpdater sharedUpdater] startCheckingForUpdates];
     [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
   }
@@ -275,7 +265,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   SEL selector = @selector(insertText:replacementRange:);
   if ([sender respondsToSelector:selector]) {
     NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[sender methodSignatureForSelector:selector]];
-    NSRange range = NSMakeRange(NSNotFound, NSNotFound);
+    NSRange range = NSMakeRange(NSNotFound, 0);
     [invocation setSelector:selector];
     [invocation setTarget:sender];
     [invocation setArgument:&string atIndex:2];
@@ -375,45 +365,41 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     NSUInteger chunkLength = MIN(availableLength, input.length - offset);
     NSString *chunk = [input substringWithRange:NSMakeRange(offset, chunkLength)];
     [self.rawBuffer appendString:chunk];
-    [self updateCustomComposition];
+    [self updateComposition];
     offset += chunkLength;
   }
 }
 
 - (void)clearComposition {
   [self.rawBuffer setString:@""];
-  self.lastCommittedString = @"";
-  self.expectedCursorLocation = NSNotFound;
-  self.expectedCursorLocationGraphemes = NSNotFound;
-  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
-  [self updateCustomComposition];
+  [self updateComposition];
 }
 
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
+  NSString *markedStr = [self markedString];
   NSString *commitStr = [self committedString];
+  NSMutableString *text = [NSMutableString stringWithString:commitStr];
+  [text appendString:suffix];
+  [self.rawBuffer setString:@""];
 
-  NSString *bundleId = nil;
-  if ([sender respondsToSelector:@selector(bundleIdentifier)]) {
-      bundleId = [sender bundleIdentifier];
-  }
-  if ([bundleId.lowercaseString containsString:@"adobe"]) {
-      [self.rawBuffer setString:@""];
-      self.lastCommittedString = @"";
-      if (commitStr.length > 0) {
-          [sender insertText:commitStr replacementRange:NSMakeRange(NSNotFound, 0)];
-      }
+  // insertText commits and replaces the client's active marked range. Keeping
+  // text marked while it is being composed is essential for Chromium UI such
+  // as the omnibox, which treats a lone insertText during keyDown as a regular
+  // keypress when no IME composition is active.
+  if (text.length > 0) {
+    // A hidden pending Wijesekara sign and a mapped punctuation key can reach
+    // the commit path without visible marked text. Establish a composition
+    // first so Chromium also handles a one-code-unit result as IME text.
+    if (markedStr.length == 0 &&
+        [sender respondsToSelector:@selector(setMarkedText:selectionRange:replacementRange:)]) {
+      [sender setMarkedText:text
+             selectionRange:NSMakeRange(text.length, 0)
+           replacementRange:NSMakeRange(NSNotFound, 0)];
+    }
+    [self insertString:text client:sender];
   } else {
-      // Flush whatever the marked form was hiding before dropping the buffer.
-      [self updateCustomCompositionWithString:commitStr];
-      [self.rawBuffer setString:@""];
-      self.lastCommittedString = @"";
+    [self updateComposition];
   }
-  if (suffix.length > 0) {
-    [self insertString:suffix client:sender];
-  }
-  self.expectedCursorLocation = NSNotFound;
-  self.expectedCursorLocationGraphemes = NSNotFound;
-  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
 }
 
 - (BOOL)commitBufferAndForwardCommand:(SEL)command client:(id)sender {
@@ -483,29 +469,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
   if ((keyCode >= 123 && keyCode <= 126) || keyCode == 115 || keyCode == 119 || keyCode == 116 || keyCode == 121) {
-
     if (self.rawBuffer.length > 0) {
       [self commitComposition:sender];
     }
     return NO;
-  }
-
-  if ([sender respondsToSelector:@selector(selectedRange)]) {
-    NSRange sel = [sender selectedRange];
-    if (sel.location != NSNotFound) {
-      BOOL cursorMoved = (self.expectedCursorLocation != NSNotFound && 
-                          sel.location != self.expectedCursorLocation && 
-                          sel.location != self.expectedCursorLocationGraphemes);
-                          
-      if (cursorMoved && self.lastReportedRange.location != NSNotFound && sel.location == self.lastReportedRange.location) {
-        cursorMoved = NO;
-      }
-      
-      if (sel.length > 0 || cursorMoved) {
-        [self commitComposition:sender];
-      }
-    }
-    self.lastReportedRange = sel;
   }
 
   if (keyCode == 49 || [string isEqualToString:@" "]) {
@@ -546,7 +513,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       return NO;
     }
     
-    NSString *currentComposed = self.lastCommittedString ?: @"";
+    NSString *currentComposed = [self markedString];
     NSUInteger targetGraphemes = [self graphemeCountForString:currentComposed];
     if (targetGraphemes > 0) {
       targetGraphemes -= 1;
@@ -560,14 +527,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       }
     }
     
-    BOOL shouldReturnNo = (self.rawBuffer.length == 0);
-    [self updateCustomComposition];
-    
-    if (shouldReturnNo) {
-        self.expectedCursorLocation = NSNotFound;
-        self.expectedCursorLocationGraphemes = NSNotFound;
-        return NO;
-    }
+    [self updateComposition];
     return YES;
   }
 
@@ -613,15 +573,11 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       [[NSCharacterSet punctuationCharacterSet] characterIsMember:first] ||
       [[NSCharacterSet symbolCharacterSet] characterIsMember:first]) {
     if (first == '\r' || first == '\n') {
-      self.expectedCursorLocation = NSNotFound;
-      self.expectedCursorLocationGraphemes = NSNotFound;
       return [self commitBufferAndForwardCommand:@selector(insertNewline:) client:sender];
     }
     if (self.rawBuffer.length > 0) {
       [self commitBufferWithSuffix:@"" client:sender];
     }
-    self.expectedCursorLocation = NSNotFound;
-    self.expectedCursorLocationGraphemes = NSNotFound;
     return NO;
   }
 
@@ -691,10 +647,6 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   // source is selected, before the first key event reaches inputText:.
   [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
   [self.rawBuffer setString:@""];
-  self.lastCommittedString = @"";
-  self.expectedCursorLocation = NSNotFound;
-  self.expectedCursorLocationGraphemes = NSNotFound;
-  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
 }
 
 - (void)deactivateServer:(id)sender {
@@ -702,10 +654,6 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   self.hasCachedInputMode = NO;
   self.hasAppliedKeyboardLayoutMode = NO;
   [self.rawBuffer setString:@""];
-  self.lastCommittedString = @"";
-  self.expectedCursorLocation = NSNotFound;
-  self.expectedCursorLocationGraphemes = NSNotFound;
-  self.lastReportedRange = NSMakeRange(NSNotFound, 0);
   [super deactivateServer:sender];
 }
 
@@ -820,146 +768,6 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
                             count++;
                           }];
   return count;
-}
-
-- (void)deleteBackwardInClient:(id)client count:(NSUInteger)count {
-  for (NSUInteger i = 0; i < count; i++) {
-    if ([client respondsToSelector:@selector(doCommandBySelector:)]) {
-      [client doCommandBySelector:@selector(deleteBackward:)];
-    }
-  }
-}
-
-- (void)updateCustomComposition {
-  [self updateCustomCompositionWithString:[self markedString]];
-}
-
-- (void)updateCustomCompositionWithString:(NSString *)newString {
-  id client = [self client];
-  if (!client) {
-    return;
-  }
-
-  NSString *oldString = self.lastCommittedString ?: @"";
-
-  NSString *bundleId = nil;
-  if ([client respondsToSelector:@selector(bundleIdentifier)]) {
-      bundleId = [client bundleIdentifier];
-  }
-  if ([bundleId.lowercaseString containsString:@"adobe"]) {
-      if (![oldString isEqualToString:newString]) {
-          NSDictionary *attr = @{ NSUnderlineStyleAttributeName: @(NSUnderlineStyleNone) };
-          NSAttributedString *attrStr = [[NSAttributedString alloc] initWithString:newString attributes:attr];
-          [client setMarkedText:attrStr selectionRange:NSMakeRange(newString.length, 0) replacementRange:NSMakeRange(NSNotFound, 0)];
-          self.lastCommittedString = newString;
-      }
-      return;
-  }
-  
-  if ([oldString isEqualToString:newString]) {
-    return;
-  }
-
-  BOOL isSimpleAppend = [newString hasPrefix:oldString];
-  NSUInteger graphemesToDelete = 0;
-  NSUInteger unicharsToDelete = 0;
-  NSMutableString *inserts = [NSMutableString string];
-
-  // Appending a suffix is the common typing path. It cannot change the
-  // existing marked text prefix, so avoid rebuilding both grapheme arrays.
-  if (isSimpleAppend) {
-    [inserts appendString:[newString substringFromIndex:oldString.length]];
-  } else {
-    NSMutableArray<NSString *> *oldGraphemes = [NSMutableArray array];
-    [oldString enumerateSubstringsInRange:NSMakeRange(0, oldString.length)
-                                  options:NSStringEnumerationByComposedCharacterSequences
-                               usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-                                 (void)substringRange; (void)enclosingRange; (void)stop;
-                                 [oldGraphemes addObject:substring];
-                               }];
-
-    NSMutableArray<NSString *> *newGraphemes = [NSMutableArray array];
-    [newString enumerateSubstringsInRange:NSMakeRange(0, newString.length)
-                                  options:NSStringEnumerationByComposedCharacterSequences
-                               usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-                                 (void)substringRange; (void)enclosingRange; (void)stop;
-                                 [newGraphemes addObject:substring];
-                               }];
-
-    NSUInteger commonCount = 0;
-    NSUInteger minCount = MIN(oldGraphemes.count, newGraphemes.count);
-    for (NSUInteger i = 0; i < minCount; i++) {
-      if ([oldGraphemes[i] isEqualToString:newGraphemes[i]]) {
-        commonCount++;
-      } else {
-        break;
-      }
-    }
-
-    BOOL isDeletion = (oldGraphemes.count > newGraphemes.count && commonCount == newGraphemes.count);
-    if (isDeletion && newString.length > 0) {
-      commonCount = 0;
-    }
-
-    graphemesToDelete = oldGraphemes.count - commonCount;
-    for (NSUInteger i = commonCount; i < newGraphemes.count; i++) {
-      [inserts appendString:newGraphemes[i]];
-    }
-
-    for (NSUInteger i = commonCount; i < oldGraphemes.count; i++) {
-      unicharsToDelete += [oldGraphemes[i] length];
-    }
-  }
-
-  if (isSimpleAppend && inserts.length > 0) {
-    [client insertText:inserts replacementRange:NSMakeRange(NSNotFound, 0)];
-    self.lastCommittedString = newString;
-    self.expectedCursorLocation = NSNotFound;
-    self.expectedCursorLocationGraphemes = NSNotFound;
-    return;
-  }
-  
-  if (unicharsToDelete > 0 || inserts.length > 0) {
-    NSRange sel = [client respondsToSelector:@selector(selectedRange)] ? [client selectedRange] : NSMakeRange(NSNotFound, 0);
-    
-    BOOL isNativeApp = (self.expectedCursorLocation == NSNotFound || sel.location == self.expectedCursorLocation);
-    BOOL isGraphemeApp = (self.expectedCursorLocationGraphemes != NSNotFound && sel.location == self.expectedCursorLocationGraphemes);
-    BOOL isBrokenApp = (self.lastReportedRange.location != NSNotFound && sel.location == self.lastReportedRange.location);
-    
-    // Ensure sel.location is large enough for both subtractions before proceeding.
-    // An inconsistent or hostile text client can report a cursor position smaller than
-    // the deletion count, which would cause unsigned integer underflow.
-    BOOL safeToSubtract = (sel.location >= unicharsToDelete && sel.location >= graphemesToDelete);
-    if (sel.location != NSNotFound && safeToSubtract && (isNativeApp || (!isGraphemeApp && !isBrokenApp))) {
-      NSRange replaceRange = (unicharsToDelete == 0) ? NSMakeRange(NSNotFound, 0) : NSMakeRange(sel.location - unicharsToDelete, unicharsToDelete);
-      if (inserts.length > 0) {
-        [client insertText:inserts replacementRange:replaceRange];
-      } else if (unicharsToDelete > 0) {
-        [client insertText:@"" replacementRange:replaceRange];
-      }
-      self.expectedCursorLocation = (sel.location - unicharsToDelete) + inserts.length;
-      self.expectedCursorLocationGraphemes = (sel.location - graphemesToDelete) + [self graphemeCountForString:inserts];
-    } else {
-      // For clients where selectedRange returns NSNotFound, graphemes, or is buggy (e.g. Electron / Antigravity / Chromium):
-      if (graphemesToDelete > 0) {
-        [self deleteBackwardInClient:client count:graphemesToDelete];
-      }
-      if (inserts.length > 0) {
-        [self insertString:inserts client:client];
-      }
-      
-      // Guard the subtraction in the fallback branch (broken/grapheme clients) too.
-      if (sel.location != NSNotFound && sel.location >= unicharsToDelete && sel.location >= graphemesToDelete) {
-        self.expectedCursorLocation = (sel.location - unicharsToDelete) + inserts.length;
-        self.expectedCursorLocationGraphemes = (sel.location - graphemesToDelete) + [self graphemeCountForString:inserts];
-      } else {
-        self.expectedCursorLocation = NSNotFound;
-        self.expectedCursorLocationGraphemes = NSNotFound;
-      }
-    }
-  }
-  
-  self.lastCommittedString = newString;
 }
 
 @end
