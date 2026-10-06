@@ -6,13 +6,17 @@ struct PhoneticGuideView: View {
     var onDismiss: (() -> Void)?
 
     private var modeName: String { isSmart ? "Smart Phonetic" : "Phonetic" }
+    /// Grammar-correct Smart Phonetic has its own guide; turned off, the classic one is shown.
+    private var grammarCorrect: Bool { isSmart && SmartPhoneticService.shared.enabled }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             
             ScrollView {
-                if isSmart {
+                if grammarCorrect {
+                    SmartPhoneticV2Content()
+                } else if isSmart {
                     SmartPhoneticContent()
                 } else {
                     NormalPhoneticContent()
@@ -38,20 +42,17 @@ struct PhoneticGuideView: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "text.cursor")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.accentColor)
-            }
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 48, height: 48)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(modeName) Typing")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text(isSmart ? "Comprehensive guide for Smart Phonetic typing." : "Write Sinhala by typing the sound with familiar Roman letters.")
+                Text(grammarCorrect ? "Grammar-correct spelling, by the rules of Sinhala orthography."
+                     : isSmart ? "Comprehensive guide for Smart Phonetic typing."
+                     : "Write Sinhala by typing the sound with familiar Roman letters.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -388,7 +389,7 @@ struct CollapsibleGuideSection<Content: View>: View {
 
     var body: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                 expandState.isExpanded.toggle()
             }
         }) {
@@ -435,7 +436,7 @@ struct CollapsibleGuideSection<Content: View>: View {
 }
 
 @available(macOS 11.0, *)
-private struct ExampleGrid: View {
+struct ExampleGrid: View {
     let rows: [(String, String)]
     var columns: Int = 3
 

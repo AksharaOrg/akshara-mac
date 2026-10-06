@@ -14,5 +14,18 @@ clang \
   "$ROOT/src/SinhalaTransliterator.m" \
   "$ROOT/src/SmartPhoneticMaps.m"
 
-"$ROOT/build/TestTransliterator"
+(cd "$ROOT" && "$ROOT/build/TestTransliterator")
 echo "Transliterator tests passed"
+
+# Smart Phonetic v2: the Swift port against the research repo's golden file.
+swiftc \
+  -O \
+  -parse-as-library \
+  -module-cache-path "$ROOT/build/ModuleCache" \
+  -o "$ROOT/build/SmartPhoneticV2Tests" \
+  "$ROOT/src/SmartPhoneticV2.swift" \
+  "$ROOT/src/SoundLexicon.swift" \
+  "$ROOT/src/SmartPhoneticService.swift" \
+  "$ROOT/tests/SmartPhoneticV2Tests.swift"
+
+"$ROOT/build/SmartPhoneticV2Tests" "$ROOT"

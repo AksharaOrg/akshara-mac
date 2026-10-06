@@ -75,17 +75,31 @@ static NSString *currentPackageArchitecture(void) {
     return self;
 }
 
+// Automatic checks run at most once a day. The time of the last check is saved, because the input
+// method's process starts at every login and whenever macOS relaunches it.
+static NSString * const AksharaLastUpdateCheckKey = @"LastUpdateCheck";
+static const NSTimeInterval AksharaUpdateCheckInterval = 24 * 60 * 60;
+
 - (void)startCheckingForUpdates {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        [self checkForUpdatesNow];
-        
+        [self checkForUpdatesIfDue];
+
+        // Hourly, only to notice when a day has passed; the check itself is skipped until then.
         [NSTimer scheduledTimerWithTimeInterval:3600
                                          target:self
-                                       selector:@selector(checkForUpdatesNow)
+                                       selector:@selector(checkForUpdatesIfDue)
                                        userInfo:nil
                                         repeats:YES];
     });
+}
+
+- (void)checkForUpdatesIfDue {
+    NSDate *last = [[NSUserDefaults standardUserDefaults] objectForKey:AksharaLastUpdateCheckKey];
+    if ([last isKindOfClass:[NSDate class]] && -[last timeIntervalSinceNow] < AksharaUpdateCheckInterval) {
+        return;
+    }
+    [self checkForUpdatesNow];
 }
 
 - (void)checkForUpdatesManually {
@@ -113,6 +127,7 @@ static NSString *currentPackageArchitecture(void) {
 }
 
 - (void)checkForUpdatesWithManualFlag:(BOOL)isManual {
+    [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:AksharaLastUpdateCheckKey];
     NSURL *apiURL = [NSURL URLWithString:@"https://api.github.com/repos/AksharaOrg/akshara-mac/releases/latest"];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:apiURL
                                                            cachePolicy:NSURLRequestReloadIgnoringLocalCacheData

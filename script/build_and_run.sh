@@ -10,6 +10,10 @@ BUILD_DIR="$ROOT/build"
 DIST_DIR="$ROOT/dist"
 MODULE_CACHE="$BUILD_DIR/ModuleCache"
 APP="$DIST_DIR/$APP_NAME.app"
+# Akshara Settings: the app for /Applications that opens the input method's Settings (launcher/).
+LAUNCHER_NAME="Akshara Settings"
+LAUNCHER_EXECUTABLE="AksharaSettings"
+LAUNCHER="$DIST_DIR/$LAUNCHER_NAME.app"
 CONTENTS="$APP/Contents"
 MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
@@ -113,6 +117,12 @@ section "Compiling ${ARCH_MODE} Binary"
           "$ROOT/src/PhoneticGuideView.swift" \
           "$ROOT/src/WelcomeWindowManager.swift" \
           "$ROOT/src/CapsLockHUD.swift" \
+          "$ROOT/src/SmartPhoneticV2.swift" \
+          "$ROOT/src/SoundLexicon.swift" \
+          "$ROOT/src/SmartPhoneticService.swift" \
+          "$ROOT/src/Preferences.swift" \
+          "$ROOT/src/SettingsView.swift" \
+          "$ROOT/src/SmartPhoneticV2Guide.swift" \
           2>&1
 
         clang \
@@ -138,6 +148,14 @@ section "Compiling ${ARCH_MODE} Binary"
           "$ROOT/src/SmartPhoneticMaps.m" \
           "$ROOT/src/AutoUpdater.m" \
           2>&1
+
+        swiftc \
+          -target $SWIFT_TARGET \
+          -O \
+          -module-cache-path "$MODULE_CACHE" \
+          -o "$BUILD_DIR_ARCH/$LAUNCHER_EXECUTABLE" \
+          "$ROOT/launcher/main.swift" \
+          2>&1
     }
 
     for arch in "${BUILD_ARCHES[@]}"; do
@@ -145,8 +163,11 @@ section "Compiling ${ARCH_MODE} Binary"
     done
     if [[ "$ARCH_MODE" == "universal" ]]; then
       lipo -create "$BUILD_DIR/x86_64/$APP_NAME" "$BUILD_DIR/arm64/$APP_NAME" -output "$BUILD_DIR/$APP_NAME"
+      lipo -create "$BUILD_DIR/x86_64/$LAUNCHER_EXECUTABLE" "$BUILD_DIR/arm64/$LAUNCHER_EXECUTABLE" \
+        -output "$BUILD_DIR/$LAUNCHER_EXECUTABLE"
     else
       cp "$BUILD_DIR/$ARCH_MODE/$APP_NAME" "$BUILD_DIR/$APP_NAME"
+      cp "$BUILD_DIR/$ARCH_MODE/$LAUNCHER_EXECUTABLE" "$BUILD_DIR/$LAUNCHER_EXECUTABLE"
     fi
 ) &
 spin $! "Compiling ${ARCH_MODE} Binary"
@@ -161,6 +182,13 @@ section "Assembling app bundle"
     /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $APP_NAME" "$CONTENTS/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$CONTENTS/Info.plist"
     printf 'APPL????' > "$CONTENTS/PkgInfo"
+
+    rm -rf "$LAUNCHER"
+    mkdir -p "$LAUNCHER/Contents/MacOS" "$LAUNCHER/Contents/Resources"
+    cp "$BUILD_DIR/$LAUNCHER_EXECUTABLE" "$LAUNCHER/Contents/MacOS/$LAUNCHER_EXECUTABLE"
+    cp "$ROOT/support/Launcher/Info.plist" "$LAUNCHER/Contents/Info.plist"
+    cp "$ROOT/support/Resources/Akshara.icns" "$LAUNCHER/Contents/Resources/Akshara.icns"
+    printf 'APPL????' > "$LAUNCHER/Contents/PkgInfo"
 ) &
 spin $! "Assembling app bundle"
 
@@ -169,7 +197,7 @@ case "$MODE" in
   run)
     echo ""
     "$ROOT/script/install.sh" --no-build
-    ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
+    ( /usr/bin/open "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
     spin $! "Launching Akshara"
     echo -e "\n${GREEN}🎉 Akshara is running!${RESET}\n"
     ;;
@@ -185,7 +213,7 @@ case "$MODE" in
   --logs|logs)
     echo ""
     "$ROOT/script/install.sh" --no-build
-    ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
+    ( /usr/bin/open "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
     spin $! "Launching Akshara"
     echo -e "\n${CYAN}Streaming logs (Ctrl+C to stop)...${RESET}\n"
     /usr/bin/log stream --info --style compact --predicate "process == \"$APP_NAME\""
@@ -194,7 +222,7 @@ case "$MODE" in
     echo ""
     "$ROOT/script/validate_install.sh"
     "$ROOT/script/install.sh" --no-build
-    ( /usr/bin/open -n "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
+    ( /usr/bin/open "$HOME/Library/Input Methods/$APP_NAME.app" >/dev/null 2>&1 ) &
     spin $! "Launching Akshara"
     sleep 1
     if pgrep -x "$APP_NAME" >/dev/null; then
@@ -207,7 +235,7 @@ case "$MODE" in
   build)
     echo ""
     LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-    ( "$LSR" -u "$APP" >/dev/null 2>&1 || true ) &
+    ( "$LSR" -u "$APP" >/dev/null 2>&1 || true; "$LSR" -u "$LAUNCHER" >/dev/null 2>&1 || true ) &
     spin $! "Unregistering build artifact from LaunchServices"
     echo -e "\n${GREEN}✔ Build complete → ${DIM}$APP${RESET}\n"
     ;;
