@@ -78,10 +78,20 @@ precondition(iconutil.terminationStatus == 0, "iconutil failed")
 
 // MARK: - Input menu icons: the one-colour mark, trimmed to its ink and centred (template images)
 
-let mark = load("AksharaMonochrome.png")
+let monochrome = load("AksharaMonochrome.png")
+// The master has faint noise around the glyph; drop pixels under 15% opacity, which would show as specks.
+let mark = render(monochrome.pixelsWide) { cg in
+    cg.interpolationQuality = .none
+    cg.draw(monochrome.cgImage!, in: CGRect(x: 0, y: 0, width: monochrome.pixelsWide, height: monochrome.pixelsHigh))
+}
 var ink = CGRect.null
 for y in 0..<mark.pixelsHigh {
-    for x in 0..<mark.pixelsWide where (mark.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.05 {
+    for x in 0..<mark.pixelsWide {
+        let alpha = mark.colorAt(x: x, y: y)?.alphaComponent ?? 0
+        if alpha < 0.15 {
+            if alpha > 0 { mark.setColor(NSColor(deviceRed: 0, green: 0, blue: 0, alpha: 0), atX: x, y: y) }
+            continue
+        }
         ink = ink.union(CGRect(x: x, y: mark.pixelsHigh - 1 - y, width: 1, height: 1))
     }
 }
