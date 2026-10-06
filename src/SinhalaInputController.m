@@ -168,6 +168,7 @@
 @property(nonatomic, copy) NSString *cachedRawBuffer;
 @property(nonatomic, copy) NSString *cachedMarkedString;
 @property(nonatomic, assign) NSInteger cachedMarkedMode;
+@property(nonatomic, assign) NSInteger cachedMarkedGeneration;
 @property(nonatomic, assign) NSInteger cachedInputMode;
 @property(nonatomic, assign) BOOL hasCachedInputMode;
 @property(nonatomic, assign) NSInteger appliedKeyboardLayoutMode;
@@ -175,11 +176,18 @@
 @property(nonatomic, strong) NSDate *lastSpaceTime;
 @property(nonatomic, assign) BOOL lastKnownCapsLockState;
 @property(nonatomic, strong) NSPanel *keyboardLayoutPanel;
+// Smart Phonetic v2: the dictionary words offered for the word being typed, and the Space choice that
+// Backspace can still undo (the spelling as typed, and the word + space that replaced it).
+@property(nonatomic, copy) NSArray<NSString *> *phoneticCandidates;
+@property(nonatomic, copy) NSString *pendingChoiceOriginal;
+@property(nonatomic, copy) NSString *pendingChoiceReplacement;
+@property(nonatomic, copy) NSString *rejectedChoice;
 - (void)appendInputToComposition:(NSString *)input client:(id)sender;
 - (void)applyKeyboardLayoutOverrideForMode:(NSInteger)mode;
 @end
 
 static const NSUInteger kMaxRawBufferLength = 256;
+static const NSUInteger kMaxPhoneticCandidates = 5;
 
 @implementation SinhalaInputController
 
@@ -318,17 +326,25 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   }
 }
 
+// Grammar-correct Smart Phonetic (v2), the default for Smart Phonetic: SmartPhoneticV2.swift.
+- (BOOL)phoneticV2Active {
+  return [self currentInputMode] == AksharaInputModeSmartPhonetic && [AksharaSmartPhonetic shared].enabled;
+}
+
 - (NSString *)markedString {
   AksharaInputMode mode = [self currentInputMode];
+  NSInteger generation = [AksharaSmartPhonetic shared].generation;
   if (self.cachedRawBuffer && self.cachedMarkedString &&
       [self.cachedRawBuffer isEqualToString:self.rawBuffer] &&
-      self.cachedMarkedMode == mode) {
+      self.cachedMarkedMode == mode && self.cachedMarkedGeneration == generation) {
     return self.cachedMarkedString;
   }
 
   NSString *result = nil;
   if (mode == AksharaInputModeSmartPhonetic) {
-    result = [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
+    result = [AksharaSmartPhonetic shared].enabled
+        ? [[AksharaSmartPhonetic shared] transliterate:self.rawBuffer]
+        : [SinhalaTransliterator transliterateSmartPhonetic:self.rawBuffer];
   } else if (mode == AksharaInputModePhonetic) {
     result = [SinhalaTransliterator transliteratePhonetic:self.rawBuffer];
   } else {
@@ -337,6 +353,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   self.cachedRawBuffer = self.rawBuffer;
   self.cachedMarkedString = result;
   self.cachedMarkedMode = mode;
+  self.cachedMarkedGeneration = generation;
   return result;
 }
 
@@ -376,10 +393,14 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (void)commitBufferWithSuffix:(NSString *)suffix client:(id)sender {
-  NSString *markedStr = [self markedString];
-  NSString *commitStr = [self committedString];
-  NSMutableString *text = [NSMutableString stringWithString:commitStr];
+  NSMutableString *text = [NSMutableString stringWithString:[self committedString]];
   [text appendString:suffix];
+  [self commitText:text client:sender];
+}
+
+// Ends the composition with `text` in its place.
+- (void)commitText:(NSString *)text client:(id)sender {
+  NSString *markedStr = [self markedString];
   [self.rawBuffer setString:@""];
 
   // insertText commits and replaces the client's active marked range. Keeping
@@ -397,9 +418,119 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
            replacementRange:NSMakeRange(NSNotFound, 0)];
     }
     [self insertString:text client:sender];
+    [self refreshPhoneticCandidates];
   } else {
     [self updateComposition];
   }
+}
+
+// Smart Phonetic v2: Space commits the dictionary spelling of the word (හොඳ for "honda", which the rules
+// spell හොන්ද) and a space. Returns NO, committing nothing, when the word is already spelled that way,
+// the list has no word for it or the user undid this choice before.
+- (BOOL)commitPhoneticChoiceWithSpaceClient:(id)sender {
+  NSString *typed = [self markedString];
+  NSString *choice = [[AksharaSmartPhonetic shared] choiceForRoman:self.rawBuffer];
+  if (choice.length == 0 || [choice isEqualToString:typed] || [typed isEqualToString:self.rejectedChoice]) {
+    return NO;
+  }
+  NSString *replacement = [choice stringByAppendingString:@" "];
+  [self commitText:replacement client:sender];
+  self.pendingChoiceOriginal = typed;
+  self.pendingChoiceReplacement = replacement;
+  return YES;
+}
+
+// Backspace right after a Space choice puts back the spelling as typed (without the space), as on Android.
+// Only when the choice is still right before the cursor; otherwise Backspace deletes as usual.
+- (BOOL)undoPhoneticChoiceForClient:(id)sender {
+  NSString *original = self.pendingChoiceOriginal;
+  NSString *replacement = self.pendingChoiceReplacement;
+  [self clearPendingChoice];
+  if (original.length == 0 || replacement.length == 0) {
+    return NO;
+  }
+  NSRange selection = [sender selectedRange];
+  if (selection.location == NSNotFound || selection.length != 0 || selection.location < replacement.length) {
+    return NO;
+  }
+  NSRange range = NSMakeRange(selection.location - replacement.length, replacement.length);
+  NSString *before = [sender attributedSubstringFromRange:range].string;
+  if (![before isEqualToString:replacement]) {
+    return NO;
+  }
+  [sender insertText:original replacementRange:range];
+  self.rejectedChoice = original;
+  return YES;
+}
+
+- (void)clearPendingChoice {
+  self.pendingChoiceOriginal = nil;
+  self.pendingChoiceReplacement = nil;
+}
+
+#pragma mark - Smart Phonetic v2 candidates
+
+- (IMKCandidates *)candidatesPanel {
+  static IMKCandidates *panel;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    panel = [[IMKCandidates alloc] initWithServer:[self server] panelType:kIMKSingleRowSteppingCandidatePanel];
+    [panel setSelectionKeys:@[@(kVK_ANSI_1), @(kVK_ANSI_2), @(kVK_ANSI_3), @(kVK_ANSI_4), @(kVK_ANSI_5)]];
+  });
+  return panel;
+}
+
+// Shows the dictionary words for the word being typed: sound-alikes first (හොඳ for "honda"), then
+// completions. Space takes the first whole word; 1-5 or a click takes any of them.
+- (void)refreshPhoneticCandidates {
+  NSArray<NSString *> *words = @[];
+  if (self.rawBuffer.length > 0 && [self phoneticV2Active]) {
+    AksharaSmartPhonetic *phonetic = [AksharaSmartPhonetic shared];
+    [phonetic warmUp];
+    words = [phonetic candidatesForRoman:self.rawBuffer limit:kMaxPhoneticCandidates];
+  }
+  if (words.count == 0 && self.phoneticCandidates.count == 0) {
+    return;
+  }
+  self.phoneticCandidates = words;
+  IMKCandidates *panel = [self candidatesPanel];
+  if (words.count == 0) {
+    [panel hide];
+    return;
+  }
+  [panel updateCandidates];
+  [panel show:kIMKLocateCandidatesBelowHint];
+}
+
+- (void)updateComposition {
+  [super updateComposition];
+  [self refreshPhoneticCandidates];
+}
+
+- (NSArray *)candidates:(id)sender {
+  (void)sender;
+  return self.phoneticCandidates ?: @[];
+}
+
+- (void)candidateSelected:(NSAttributedString *)candidateString {
+  if (candidateString.length == 0 || self.rawBuffer.length == 0) {
+    return;
+  }
+  [self clearPendingChoice];
+  [self commitText:[candidateString.string stringByAppendingString:@" "] client:[self client]];
+}
+
+// 1-5 pick a shown candidate, as the panel numbers them.
+- (BOOL)commitCandidateForDigit:(NSString *)string client:(id)sender {
+  if (self.rawBuffer.length == 0 || self.phoneticCandidates.count == 0 || string.length != 1) {
+    return NO;
+  }
+  unichar digit = [string characterAtIndex:0];
+  if (digit < '1' || digit >= '1' + MIN(self.phoneticCandidates.count, kMaxPhoneticCandidates)) {
+    return NO;
+  }
+  [self commitText:[self.phoneticCandidates[digit - '1'] stringByAppendingString:@" "] client:sender];
+  return YES;
 }
 
 - (BOOL)commitBufferAndForwardCommand:(SEL)command client:(id)sender {
@@ -424,6 +555,11 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
 - (BOOL)shouldCommitBufferBeforeInput:(NSString *)newInput {
   if (self.rawBuffer.length == 0) {
+    return NO;
+  }
+  // v2 spells whole words (glides, ං before a velar, no sanyaka at word start …) and looks the word up
+  // in the dictionary, so the buffer holds the word until a space or punctuation ends it.
+  if ([self phoneticV2Active]) {
     return NO;
   }
   
@@ -468,6 +604,11 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 }
 
 - (BOOL)inputText:(NSString *)string key:(NSInteger)keyCode modifiers:(NSUInteger)flags client:(id)sender {
+  // Only the Backspace right after a Space choice undoes it.
+  if (keyCode != kVK_Delete) {
+    [self clearPendingChoice];
+  }
+
   if ((keyCode >= 123 && keyCode <= 126) || keyCode == 115 || keyCode == 119 || keyCode == 116 || keyCode == 121) {
     if (self.rawBuffer.length > 0) {
       [self commitComposition:sender];
@@ -510,7 +651,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
 
   if (keyCode == kVK_Delete) {
     if (self.rawBuffer.length == 0) {
-      return NO;
+      return [self undoPhoneticChoiceForClient:sender];
     }
     
     NSString *currentComposed = [self markedString];
@@ -560,8 +701,14 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     return NO;
   }
 
+  if ([self commitCandidateForDigit:string client:sender]) {
+    return YES;
+  }
+
   unichar first = [string characterAtIndex:0];
-  if ([[NSCharacterSet letterCharacterSet] characterIsMember:first]) {
+  // v2's archaic letters are typed with ~ (~l ඏ, ~ll ඐ, ~n ඁ) and + joins touching letters.
+  BOOL archaicKey = (first == '~' || first == '+') && [self phoneticV2Active] && [AksharaSmartPhonetic shared].archaic;
+  if ([[NSCharacterSet letterCharacterSet] characterIsMember:first] || archaicKey) {
     if ([self shouldCommitBufferBeforeInput:string]) {
       [self commitBufferWithSuffix:@"" client:sender];
     }
@@ -574,6 +721,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
       [[NSCharacterSet symbolCharacterSet] characterIsMember:first]) {
     if (first == '\r' || first == '\n') {
       return [self commitBufferAndForwardCommand:@selector(insertNewline:) client:sender];
+    }
+    if (first == ' ' && self.rawBuffer.length > 0 && [self phoneticV2Active] &&
+        [self commitPhoneticChoiceWithSpaceClient:sender]) {
+      return YES;
     }
     if (self.rawBuffer.length > 0) {
       [self commitBufferWithSuffix:@"" client:sender];
@@ -647,10 +798,16 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   // source is selected, before the first key event reaches inputText:.
   [self applyKeyboardLayoutOverrideForMode:[self currentInputMode]];
   [self.rawBuffer setString:@""];
+  [self clearPendingChoice];
+  self.phoneticCandidates = nil;
+  if ([self phoneticV2Active]) {
+    [[AksharaSmartPhonetic shared] warmUp];
+  }
 }
 
 - (void)deactivateServer:(id)sender {
   [self commitComposition:sender];
+  [self clearPendingChoice];
   self.hasCachedInputMode = NO;
   self.hasAppliedKeyboardLayoutMode = NO;
   [self.rawBuffer setString:@""];
@@ -687,6 +844,10 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     [menu addItem:guideItem];
   }
 
+  if (mode == AksharaInputModeSmartPhonetic) {
+    [self addSmartPhoneticItemsToMenu:menu];
+  }
+
   // 3. Check for Updates
   AutoUpdater *updater = [AutoUpdater sharedUpdater];
   BOOL updateAvailable = [updater isUpdateAvailable];
@@ -705,6 +866,77 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   }
   [menu addItem:updateItem];
   return menu;
+}
+
+// The v2 setting and its spelling options, as on Android (Settings → Typing). Flat items: input menus
+// don't reliably show submenus.
+- (void)addSmartPhoneticItemsToMenu:(NSMenu *)menu {
+  AksharaSmartPhonetic *phonetic = [AksharaSmartPhonetic shared];
+  [menu addItem:[NSMenuItem separatorItem]];
+  [menu addItem:[self toggleItemWithTitle:@"Grammar-correct Smart Phonetic"
+                                   action:@selector(toggleSmartPhoneticV2:)
+                                       on:phonetic.enabled]];
+  if (phonetic.enabled) {
+    NSMenuItem *header = [[NSMenuItem alloc] initWithTitle:@"Spelling Options" action:nil keyEquivalent:@""];
+    header.enabled = NO;
+    [menu addItem:header];
+    [menu addItem:[self toggleItemWithTitle:@"Write kruura as ක්‍රූර"
+                                     action:@selector(toggleRakaransayaU:)
+                                         on:phonetic.rakaransayaU]];
+    [menu addItem:[self toggleItemWithTitle:@"Joined Repaya (karma → කර්‍ම)"
+                                     action:@selector(toggleRepayaZwj:)
+                                         on:phonetic.repayaZwj]];
+    [menu addItem:[self toggleItemWithTitle:@"Classical Conjuncts (akShara → අක්‍ෂර)"
+                                     action:@selector(toggleClassical:)
+                                         on:phonetic.classical]];
+    [menu addItem:[self toggleItemWithTitle:@"Archaic Letters (ඏ ඐ ඎ ඁ ඦ, + for touching)"
+                                     action:@selector(toggleArchaic:)
+                                         on:phonetic.archaic]];
+  }
+  [menu addItem:[NSMenuItem separatorItem]];
+}
+
+- (NSMenuItem *)toggleItemWithTitle:(NSString *)title action:(SEL)action on:(BOOL)on {
+  NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:action keyEquivalent:@""];
+  item.target = self;
+  item.state = on ? NSControlStateValueOn : NSControlStateValueOff;
+  return item;
+}
+
+// IMK may call menu actions on its connection thread; the setting and the composition live on the main one.
+- (void)changeSmartPhonetic:(void (^)(AksharaSmartPhonetic *phonetic))change {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    change([AksharaSmartPhonetic shared]);
+    [self clearPendingChoice];
+    if (self.rawBuffer.length > 0) {
+      [self updateComposition];
+    }
+  });
+}
+
+- (void)toggleSmartPhoneticV2:(id)sender {
+  (void)sender;
+  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.enabled = !phonetic.enabled; }];
+}
+
+- (void)toggleRakaransayaU:(id)sender {
+  (void)sender;
+  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.rakaransayaU = !phonetic.rakaransayaU; }];
+}
+
+- (void)toggleRepayaZwj:(id)sender {
+  (void)sender;
+  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.repayaZwj = !phonetic.repayaZwj; }];
+}
+
+- (void)toggleClassical:(id)sender {
+  (void)sender;
+  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.classical = !phonetic.classical; }];
+}
+
+- (void)toggleArchaic:(id)sender {
+  (void)sender;
+  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.archaic = !phonetic.archaic; }];
 }
 
 - (void)showWelcomeWindow:(id)sender {

@@ -25,6 +25,7 @@ swiftc \
   -o "$ROOT/build/SmartPhoneticV2Tests" \
   "$ROOT/src/SmartPhoneticV2.swift" \
   "$ROOT/src/SoundLexicon.swift" \
+  "$ROOT/src/SmartPhoneticService.swift" \
   "$ROOT/tests/SmartPhoneticV2Tests.swift"
 
 "$ROOT/build/SmartPhoneticV2Tests" "$ROOT"

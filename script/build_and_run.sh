@@ -115,6 +115,7 @@ section "Compiling ${ARCH_MODE} Binary"
           "$ROOT/src/CapsLockHUD.swift" \
           "$ROOT/src/SmartPhoneticV2.swift" \
           "$ROOT/src/SoundLexicon.swift" \
+          "$ROOT/src/SmartPhoneticService.swift" \
           2>&1
 
         clang \

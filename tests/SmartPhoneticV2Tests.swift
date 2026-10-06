@@ -96,6 +96,30 @@ struct SmartPhoneticV2Tests {
         expect("normalize දුම්රිය", SoundLexicon.normalize("දුම්රිය"), "දුම්රිය")
         expect("hasPrefix", lexicon.hasPrefix(SoundLexicon.soundKey("ලංක")) ? "yes" : "no", "yes")
 
+        // The input controller's choices, as in Android's SmartPhoneticV2IntegrationTest.
+        let suite = "org.akshara.SmartPhoneticV2Tests"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = SmartPhoneticService(defaults: defaults)
+        expect("v2 on by default", service.enabled ? "on" : "off", "on")
+        expect("no word list yet", service.choice(forRoman: "honda") ?? "nil", "nil")
+        service.load(lexicon)
+        expect("honda: rules", service.transliterate("honda"), "හොන්ද")
+        expect("honda: Space choice", service.choice(forRoman: "honda") ?? "nil", "හොඳ")
+        expect("honda: first candidate", service.candidates(forRoman: "honda", limit: 5).first ?? "", "හොඳ")
+        expect("hond: completion", service.candidates(forRoman: "hond", limit: 5).first ?? "", "හොඳ")
+        expect("kazda: explicit spelling kept", service.choice(forRoman: "kazda") ?? "nil", "කඳ")
+        expect("kramaya: not in the list, rules kept", service.choice(forRoman: "kramaya") ?? "nil", "nil")
+        service.rakaransayaU = true
+        service.repayaZwj = true
+        expect("kruura: style kept", service.choice(forRoman: "kruura") ?? "nil", "ක්\(z)රූර")
+        expect("karma: style kept", service.choice(forRoman: "karma") ?? "nil", "කර්\(z)ම")
+        service.enabled = false
+        let reloaded = SmartPhoneticService(defaults: defaults)
+        expect("settings persist", "\(reloaded.enabled) \(reloaded.rakaransayaU) \(reloaded.repayaZwj) \(reloaded.classical)",
+               "false true true false")
+
         if failed { exit(1) }
         print("Smart Phonetic v2 tests passed")
     }
