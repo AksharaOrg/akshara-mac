@@ -136,6 +136,23 @@ spin $! "Signing app bundle"
 
 section "Writing installer scripts"
 (
+cat >"$PKG_SCRIPTS/preinstall" <<'SCRIPT'
+#!/bin/sh
+# Remember whether Akshara was already installed: postinstall asks for a restart only after an update.
+# A fresh install needs none (the input method registers its input sources when it starts).
+MARKER="/private/tmp/com.local.inputmethod.Akshara.updating"
+/bin/rm -f "$MARKER"
+CONSOLE_USER="$(/usr/bin/stat -f%Su /dev/console)"
+USER_HOME=""
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
+  USER_HOME="$(/usr/bin/dscl . -read /Users/"$CONSOLE_USER" NFSHomeDirectory | /usr/bin/awk '{print $2}')"
+fi
+if [ -d "/Library/Input Methods/Akshara.app" ] || { [ -n "$USER_HOME" ] && [ -d "$USER_HOME/Library/Input Methods/Akshara.app" ]; }; then
+  /usr/bin/touch "$MARKER"
+fi
+exit 0
+SCRIPT
+
 cat >"$PKG_SCRIPTS/postinstall" <<'SCRIPT'
 #!/bin/sh
 set -eu
@@ -202,7 +219,10 @@ for key in ["AppleEnabledInputSources", "AppleSelectedInputSources", "AppleInput
 defaults.setPersistentDomain(domain, forName: "com.apple.HIToolbox")
 defaults.synchronize()
 SWIFT
-  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/swift "$CLEANUP_SOURCE" >/dev/null 2>&1 || true
+  # /usr/bin/swift is only a stub without the developer tools: on a fresh Mac it asks to install them.
+  if /usr/bin/xcode-select -p >/dev/null 2>&1; then
+    /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/swift "$CLEANUP_SOURCE" >/dev/null 2>&1 || true
+  fi
   /bin/rm -f "$CLEANUP_SOURCE"
 fi
 
@@ -215,44 +235,19 @@ if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" 
   # Not -n: a second copy of the input method would run beside the one macOS manages.
   /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open "$APP" >/dev/null 2>&1 || true
 
-  # The package installer runs as root, so present a native NSAlert inside the
-  # logged-in user's GUI session after the update has finished copying.
-  DIALOG_SOURCE="$(/usr/bin/mktemp /tmp/akshara-restart-dialog.XXXXXX.swift)"
-  /bin/cat >"$DIALOG_SOURCE" <<'SWIFT'
-import AppKit
-
-let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
-DispatchQueue.main.async {
-    let alert = NSAlert()
-    alert.messageText = "Akshara Updated"
-    alert.informativeText = "Akshara has been updated successfully. Restart your Mac to finish applying the update."
-    alert.addButton(withTitle: "Restart Now")
-    alert.addButton(withTitle: "Later")
-    alert.alertStyle = .informational
-
-    let iconPath = "\(NSHomeDirectory())/Library/Input Methods/Akshara.app/Contents/Resources/Akshara.icns"
-    if let icon = NSImage(contentsOfFile: iconPath) {
-        alert.icon = icon
-    }
-
-    if alert.runModal() == .alertFirstButtonReturn {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        task.arguments = ["-e", "tell application \"System Events\" to restart"]
-        try? task.run()
-    }
-    NSApp.terminate(nil)
-}
-app.run()
-SWIFT
-  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/swift "$DIALOG_SOURCE" >/dev/null 2>&1 || true
-  /bin/rm -f "$DIALOG_SOURCE"
+  # After an update, ask for a restart so every app picks up the new input method. osascript is on
+  # every Mac (/usr/bin/swift needs the developer tools). A fresh install needs no restart.
+  if [ -f /private/tmp/com.local.inputmethod.Akshara.updating ]; then
+    /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/osascript \
+      -e 'set answer to button returned of (display dialog "Akshara has been updated successfully. Restart your Mac to finish applying the update." with title "Akshara Updated" buttons {"Later", "Restart Now"} default button "Restart Now" with icon POSIX file "/Library/Input Methods/Akshara.app/Contents/Resources/Akshara.icns")' \
+      -e 'if answer is "Restart Now" then tell application "System Events" to restart' >/dev/null 2>&1 || true
+  fi
 fi
 
+/bin/rm -f /private/tmp/com.local.inputmethod.Akshara.updating
 exit 0
 SCRIPT
-chmod +x "$PKG_SCRIPTS/postinstall"
+chmod +x "$PKG_SCRIPTS/preinstall" "$PKG_SCRIPTS/postinstall"
 ) &
 spin $! "Writing postinstall script"
 

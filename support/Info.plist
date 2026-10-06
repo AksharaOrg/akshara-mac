@@ -19,9 +19,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.40</string>
+	<string>0.1.34</string>
 	<key>CFBundleVersion</key>
-	<string>12</string>
+	<string>13</string>
 	<!-- akshara://settings, akshara://welcome, akshara://guide/smart, akshara://guide/phonetic:
 	     the Akshara Settings app opens these windows of the running input method. -->
 	<key>CFBundleURLTypes</key>

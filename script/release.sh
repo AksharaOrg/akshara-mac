@@ -115,6 +115,16 @@ handle_create() {
     fi
     
     VERSION_NUM=${VERSION#v}
+
+    # Tag only what is on upstream/main: v0.1.32 was tagged on an out-of-date checkout and shipped
+    # August's code as the newest release.
+    git fetch -q upstream main
+    if [ "$(git rev-parse HEAD)" != "$(git rev-parse upstream/main)" ]; then
+        echo -e "${RED}✖${RESET} HEAD ($(git rev-parse --short HEAD)) is not upstream/main ($(git rev-parse --short upstream/main))."
+        echo -e "${DIM}Check out main and pull upstream first.${RESET}"
+        read -n 1 -s -r -p "Press any key to continue..."
+        return
+    fi
     
     ( git tag -a "$VERSION" -m "Akshara $VERSION_NUM" ) &
     spin $! "Creating local tag $VERSION"

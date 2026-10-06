@@ -91,6 +91,9 @@ import SwiftUI
         newWindow.isOpaque = false
         newWindow.backgroundColor = .clear
         newWindow.isRestorable = false
+        // This manager owns the window. With the default (true), closing it also releases it, one release
+        // more than Swift's reference holds, and the app crashes when the autorelease pool drains.
+        newWindow.isReleasedWhenClosed = false
         newWindow.standardWindowButton(.zoomButton)?.isHidden = true
         newWindow.contentViewController = hostingController
         newWindow.delegate = self
@@ -143,6 +146,7 @@ import SwiftUI
         window.isOpaque = false
         window.backgroundColor = .clear
         window.isRestorable = false
+        window.isReleasedWhenClosed = false   // owned by this manager; see showWelcomeWindow
         window.standardWindowButton(.zoomButton)?.isHidden = true
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.closeButton)?.isHidden = true
