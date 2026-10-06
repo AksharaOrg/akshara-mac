@@ -113,6 +113,8 @@ section "Compiling ${ARCH_MODE} Binary"
           "$ROOT/src/PhoneticGuideView.swift" \
           "$ROOT/src/WelcomeWindowManager.swift" \
           "$ROOT/src/CapsLockHUD.swift" \
+          "$ROOT/src/SmartPhoneticV2.swift" \
+          "$ROOT/src/SoundLexicon.swift" \
           2>&1
 
         clang \
