@@ -404,6 +404,20 @@ SWIFT_CLASS("_TtC7Akshara7HUDView")
 - (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)coder OBJC_DESIGNATED_INITIALIZER;
 @end
 
+/// Akshara’s settings, shown in the Settings window. Smart Phonetic v2 and its spelling options live in
+/// <code>SmartPhoneticService</code>; these are the rest. All are on by default, as on Android.
+SWIFT_CLASS_NAMED("Preferences")
+@interface AksharaPreferences : NSObject
+SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) AksharaPreferences * _Nonnull shared;)
++ (AksharaPreferences * _Nonnull)shared SWIFT_WARN_UNUSED_RESULT;
+/// The candidate row under the word being typed (Grammar-correct Smart Phonetic).
+@property (nonatomic) BOOL showSuggestions;
+/// Two quick spaces after a word insert “. “.
+@property (nonatomic) BOOL doubleSpacePeriod;
+- (nonnull instancetype)init SWIFT_UNAVAILABLE;
++ (nonnull instancetype)new SWIFT_UNAVAILABLE_MSG("-init is unavailable");
+@end
+
 @class NSString;
 /// Smart Phonetic v2 for the input controller: the setting and its spelling options, the converter, and the
 /// bundled word list that picks the dictionary spelling of what was typed (හොඳ for “honda”). It follows
@@ -449,6 +463,8 @@ SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) WelcomeWindo
 - (void)showWelcomeWindow;
 - (void)closeWelcomeWindow;
 - (void)showPhoneticGuideWithSmartMode:(BOOL)isSmart;
+/// Akshara’s settings, like the Android app’s (the input menu’s “Settings…”).
+- (void)showSettingsWindow;
 - (void)windowWillClose:(NSNotification * _Nonnull)notification;
 - (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 @end

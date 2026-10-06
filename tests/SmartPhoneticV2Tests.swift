@@ -111,6 +111,11 @@ struct SmartPhoneticV2Tests {
         expect("hond: completion", service.candidates(forRoman: "hond", limit: 5).first ?? "", "හොඳ")
         expect("kazda: explicit spelling kept", service.choice(forRoman: "kazda") ?? "nil", "කඳ")
         expect("kramaya: not in the list, rules kept", service.choice(forRoman: "kramaya") ?? "nil", "nil")
+        // The dictionary examples in the typing guide (SmartPhoneticV2Guide.swift).
+        for (roman, word) in [("honda", "හොඳ"), ("sinhala", "සිංහල"), ("bada", "බඩ"), ("lamaya", "ළමයා"),
+                              ("pilithura", "පිළිතුර"), ("kalu", "කළු"), ("keema", "කෑම"), ("amma", "අම්මා")] {
+            expect("guide: \(roman)", service.choice(forRoman: roman) ?? "nil", word)
+        }
         service.rakaransayaU = true
         service.repayaZwj = true
         expect("kruura: style kept", service.choice(forRoman: "kruura") ?? "nil", "ක්\(z)රූර")

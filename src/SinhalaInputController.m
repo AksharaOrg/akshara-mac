@@ -487,7 +487,9 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   if (self.rawBuffer.length > 0 && [self phoneticV2Active]) {
     AksharaSmartPhonetic *phonetic = [AksharaSmartPhonetic shared];
     [phonetic warmUp];
-    words = [phonetic candidatesForRoman:self.rawBuffer limit:kMaxPhoneticCandidates];
+    if ([AksharaPreferences shared].showSuggestions) {
+      words = [phonetic candidatesForRoman:self.rawBuffer limit:kMaxPhoneticCandidates];
+    }
   }
   if (words.count == 0 && self.phoneticCandidates.count == 0) {
     return;
@@ -616,7 +618,7 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
     return NO;
   }
 
-  if (keyCode == 49 || [string isEqualToString:@" "]) {
+  if ((keyCode == 49 || [string isEqualToString:@" "]) && [AksharaPreferences shared].doubleSpacePeriod) {
     NSDate *now = [NSDate date];
     if (self.lastSpaceTime && [now timeIntervalSinceDate:self.lastSpaceTime] < 0.5) {
       self.lastSpaceTime = nil;
@@ -826,6 +828,12 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   welcomeItem.target = self;
   [menu addItem:welcomeItem];
 
+  NSMenuItem *settingsItem = [[NSMenuItem alloc] initWithTitle:@"Settings…"
+                                                        action:@selector(showSettings:)
+                                                 keyEquivalent:@""];
+  settingsItem.target = self;
+  [menu addItem:settingsItem];
+
   // 2. Wijesekara Keyboard (only in Wijesekara mode) or Phonetic Guide (in phonetic modes)
   if (mode == AksharaInputModeWijesekara) {
     NSMenuItem *keyboardItem = [[NSMenuItem alloc] initWithTitle:@"Wijesekara Keyboard"
@@ -868,31 +876,12 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   return menu;
 }
 
-// The v2 setting and its spelling options, as on Android (Settings → Typing). Flat items: input menus
-// don't reliably show submenus.
+// The v2 setting, for switching quickly; its spelling options are in Settings, as on Android.
 - (void)addSmartPhoneticItemsToMenu:(NSMenu *)menu {
-  AksharaSmartPhonetic *phonetic = [AksharaSmartPhonetic shared];
   [menu addItem:[NSMenuItem separatorItem]];
   [menu addItem:[self toggleItemWithTitle:@"Grammar-correct Smart Phonetic"
                                    action:@selector(toggleSmartPhoneticV2:)
-                                       on:phonetic.enabled]];
-  if (phonetic.enabled) {
-    NSMenuItem *header = [[NSMenuItem alloc] initWithTitle:@"Spelling Options" action:nil keyEquivalent:@""];
-    header.enabled = NO;
-    [menu addItem:header];
-    [menu addItem:[self toggleItemWithTitle:@"Write kruura as ක්‍රූර"
-                                     action:@selector(toggleRakaransayaU:)
-                                         on:phonetic.rakaransayaU]];
-    [menu addItem:[self toggleItemWithTitle:@"Joined Repaya (karma → කර්‍ම)"
-                                     action:@selector(toggleRepayaZwj:)
-                                         on:phonetic.repayaZwj]];
-    [menu addItem:[self toggleItemWithTitle:@"Classical Conjuncts (akShara → අක්‍ෂර)"
-                                     action:@selector(toggleClassical:)
-                                         on:phonetic.classical]];
-    [menu addItem:[self toggleItemWithTitle:@"Archaic Letters (ඏ ඐ ඎ ඁ ඦ, + for touching)"
-                                     action:@selector(toggleArchaic:)
-                                         on:phonetic.archaic]];
-  }
+                                       on:[AksharaSmartPhonetic shared].enabled]];
   [menu addItem:[NSMenuItem separatorItem]];
 }
 
@@ -919,32 +908,19 @@ typedef NS_ENUM(NSInteger, AksharaInputMode) {
   [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.enabled = !phonetic.enabled; }];
 }
 
-- (void)toggleRakaransayaU:(id)sender {
-  (void)sender;
-  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.rakaransayaU = !phonetic.rakaransayaU; }];
-}
-
-- (void)toggleRepayaZwj:(id)sender {
-  (void)sender;
-  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.repayaZwj = !phonetic.repayaZwj; }];
-}
-
-- (void)toggleClassical:(id)sender {
-  (void)sender;
-  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.classical = !phonetic.classical; }];
-}
-
-- (void)toggleArchaic:(id)sender {
-  (void)sender;
-  [self changeSmartPhonetic:^(AksharaSmartPhonetic *phonetic) { phonetic.archaic = !phonetic.archaic; }];
-}
-
 - (void)showWelcomeWindow:(id)sender {
   (void)sender;
   // IMK may invoke menu actions on its connection thread. AppKit window work
   // must run on the main thread or macOS can silently drop the presentation.
   dispatch_async(dispatch_get_main_queue(), ^{
     [WelcomeWindowManager.shared showWelcomeWindow];
+  });
+}
+
+- (void)showSettings:(id)sender {
+  (void)sender;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [WelcomeWindowManager.shared showSettingsWindow];
   });
 }
 

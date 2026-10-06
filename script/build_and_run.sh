@@ -116,6 +116,9 @@ section "Compiling ${ARCH_MODE} Binary"
           "$ROOT/src/SmartPhoneticV2.swift" \
           "$ROOT/src/SoundLexicon.swift" \
           "$ROOT/src/SmartPhoneticService.swift" \
+          "$ROOT/src/Preferences.swift" \
+          "$ROOT/src/SettingsView.swift" \
+          "$ROOT/src/SmartPhoneticV2Guide.swift" \
           2>&1
 
         clang \

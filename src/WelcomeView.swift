@@ -281,7 +281,7 @@ struct WelcomeView: View {
                                 )
                                 LayoutChoice(
                                     title: "Akshara – Smart Phonetic",
-                                    description: "A faster phonetic style with handy combinations, such as Aa for ඇ."
+                                    description: "Grammar-correct phonetic typing: Space picks the dictionary spelling, such as honda → හොඳ."
                                 )
                                 LayoutChoice(
                                     title: "Akshara – SLS1134",

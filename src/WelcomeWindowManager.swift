@@ -6,6 +6,8 @@ import SwiftUI
 
     private var window: NSWindow?
     private var phoneticGuideWindow: NSWindow?
+    private var settingsWindow: NSWindow?
+    private var settingsModel: AnyObject?
     private var inputMethodWasActivated = false
 
     private func ensureVisibleAppActivation() {
@@ -15,7 +17,7 @@ import SwiftUI
     }
 
     private func restoreAccessoryActivationIfPossible() {
-        guard window == nil, phoneticGuideWindow == nil else { return }
+        guard window == nil, phoneticGuideWindow == nil, settingsWindow == nil else { return }
         if NSApp.activationPolicy() != .accessory {
             NSApp.setActivationPolicy(.accessory)
         }
@@ -150,6 +152,38 @@ import SwiftUI
         }
     }
 
+    /// Akshara's settings, like the Android app's (the input menu's "Settings…").
+    @objc public func showSettingsWindow() {
+        ensureVisibleAppActivation()
+        guard #available(macOS 11.0, *) else { return }
+
+        if let window = settingsWindow {
+            (settingsModel as? SettingsModel)?.reload()
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let model = SettingsModel()
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 520),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Akshara Settings"
+        window.isRestorable = false
+        window.isReleasedWhenClosed = false
+        window.contentViewController = NSHostingController(rootView: SettingsView(model: model))
+        window.delegate = self
+        window.center()
+        settingsWindow = window
+        settingsModel = model
+
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     public func windowWillClose(_ notification: Notification) {
         guard let closingWindow = notification.object as? NSWindow else { return }
         if closingWindow === window {
@@ -157,6 +191,10 @@ import SwiftUI
             restoreAccessoryActivationIfPossible()
         } else if closingWindow === phoneticGuideWindow {
             phoneticGuideWindow = nil
+            restoreAccessoryActivationIfPossible()
+        } else if closingWindow === settingsWindow {
+            settingsWindow = nil
+            settingsModel = nil
             restoreAccessoryActivationIfPossible()
         }
     }

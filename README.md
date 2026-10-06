@@ -31,11 +31,12 @@ Whether you prefer rapid **Smart Phonetic**, standard **Singlish Phonetic**, or 
 
 - **Zero-Latency Native IME**: Engineered in native Objective-C and Swift for instant keystroke processing.
 - **Three Distinct Input Modes**:
-  - **`Akshara - Smart Phonetic`**: Accelerated modern phonetic typing with intuitive shorthand keys and automatic conjuncts.
+  - **`Akshara - Smart Phonetic`**: Grammar-correct phonetic typing, with dictionary spelling and suggestions.
   - **`Akshara - Phonetic`**: Classic romanized Sinhala transliteration.
   - **`Akshara - Wijesekara (SLS 1134)`**: Full compliance with Sri Lanka standard SLS 1134 keyboard layout with live visual-to-Unicode reordering.
 - **Interactive Wijesekara Keyboard Viewer**: Live macOS on-screen keyboard viewer with interactive Shift & Option layer visualization.
 - **Quick Guide & Cheat Sheet**: Instant access to phonetic rules and vowel signs directly from the macOS input menu bar.
+- **Settings Window**: Spelling options, suggestions and double-space period, from **Settings…** in the input menu.
 - **Double-Space Period**: Pressing `Space` twice automatically inserts `. ` across all input modes.
 - **Built-in Auto Updater**: Background release checks and convenient in-app update prompts via GitHub Releases.
 - **Clean, Secure & Private**: Fully sandboxed with no analytics, keylogging, telemetry, or external network requests.
@@ -48,7 +49,7 @@ Whether you prefer rapid **Smart Phonetic**, standard **Singlish Phonetic**, or 
 ┌──────────────────────────────────────┬─────────────────────────────────────────────────────────────┐
 │ Input Source (System Settings)       │ Description                                                 │
 ├──────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│  Akshara - Smart Phonetic            │ Accelerated phonetic typing (e.g. 'Aa' ➔ 'ඈ', 'x' ➔ 'ං')    │
+│  Akshara - Smart Phonetic            │ Grammar-correct phonetic typing (e.g. 'honda' ➔ 'හොඳ')      │
 │  Akshara - Phonetic                  │ Classic romanized Sinhala transliteration                   │
 │  Akshara - Wijesekara (SLS 1134)     │ Standard Wijesekara layout with live vowel reordering       │
 └──────────────────────────────────────┴─────────────────────────────────────────────────────────────┘
@@ -58,54 +59,72 @@ Whether you prefer rapid **Smart Phonetic**, standard **Singlish Phonetic**, or 
 
 ### 1. Smart Phonetic Mode
 
-Smart Phonetic simplifies typing complex Sinhala glyphs into intuitive Latin keystrokes:
+Smart Phonetic spells Sinhala the grammar-correct way: by the rules of Sinhala orthography from the
+[Sinhala Phonetic Orthography](https://srilals.github.io/Sinhala-Phonetic-Orthography/) research, the same
+engine as the Akshara Android keyboard. Hal, yansaya, rakaransaya and ං are written for you, and a bundled
+word list picks the dictionary spelling of letters that sound alike.
+
+The classic Smart Phonetic keys (`d` ➔ `ඩ`, `dh` ➔ `ද` …) are one switch away: turn off **Grammar-correct
+Smart Phonetic** in the input menu or in **Settings…**.
 
 #### 🔹 Vowels (ස්වර)
 
-| Sinhala | Keystrokes  | Sinhala | Keystrokes         | Sinhala | Keystrokes         |
-| :-----: | :---------- | :-----: | :----------------- | :-----: | :----------------- |
-|  **අ**  | `a`         |  **ආ**  | `aa`               |  **ඇ**  | `A`                |
-|  **ඈ**  | `Aa` / `AA` |  **ඉ**  | `i`                |  **ඊ**  | `ii` / `I`         |
-|  **උ**  | `u` / `U`   |  **ඌ**  | `uu` / `Uu` / `UU` |  **ඍ**  | `R`                |
-|  **ඎ**  | `Ru`        |  **එ**  | `e`                |  **ඒ**  | `ee`               |
-|  **ඓ**  | `ai` / `E`  |  **ඔ**  | `o` / `O`          |  **ඕ**  | `oo` / `Oo` / `OO` |
-|  **ඖ**  | `au` / `ou` |         |                    |         |                    |
+| Sinhala | Keystrokes        | Sinhala | Keystrokes         | Sinhala | Keystrokes  |
+| :-----: | :---------------- | :-----: | :----------------- | :-----: | :---------- |
+|  **අ**  | `a`               |  **ආ**  | `aa`               |  **ඇ**  | `A` / `ae`  |
+|  **ඈ**  | `Aa` / `AA`       |  **ඉ**  | `i`                |  **ඊ**  | `ii` / `I`  |
+|  **උ**  | `u` / `U`         |  **ඌ**  | `uu` / `Uu` / `UU` |  **ඍ**  | `R`         |
+|  **එ**  | `e`               |  **ඒ**  | `ee`               |  **ඓ**  | `E`         |
+|  **ඔ**  | `o` / `O`         |  **ඕ**  | `oo` / `Oo` / `OO` |  **ඖ**  | `Au` / `AU` |
+
+`ai` and `au` are two vowels: `ai` ➔ `අයි`, `au` ➔ `අවු`. Between vowels the glide is written for you.
 
 #### 🔹 Consonants (ව්‍යංජන)
 
-| Sinhala | Keystrokes  | Sinhala | Keystrokes  | Sinhala | Keystrokes              |
-| :-----: | :---------- | :-----: | :---------- | :-----: | :---------------------- |
-|  **ක**  | `ka` / `ca` |  **ග**  | `ga`        |  **ච**  | `cha`                   |
-|  **ජ**  | `ja`        |  **ට**  | `ta`        |  **ඩ**  | `da`                    |
-|  **ත**  | `tha`       |  **ද**  | `dha` / `q` |  **න**  | `na`                    |
-|  **ණ**  | `N`         |  **ප**  | `pa`        |  **බ**  | `ba`                    |
-|  **ම**  | `ma`        |  **ය**  | `ya`        |  **ර**  | `ra`                    |
-|  **ල**  | `la`        |  **ළ**  | `L`         |  **ව**  | `w` / `v` / `Wa` / `Va` |
-|  **ස**  | `sa`        |  **ශ**  | `sha`       |  **ෂ**  | `Sa` / `Sha`            |
-|  **හ**  | `ha`        |  **ෆ**  | `fa`        |  **ඞ**  | `X`                     |
+| Sinhala | Keystrokes | Sinhala | Keystrokes | Sinhala | Keystrokes            |
+| :-----: | :--------- | :-----: | :--------- | :-----: | :-------------------- |
+|  **ක**  | `k` / `c`  |  **ග**  | `g`        |  **ච**  | `ch`                  |
+|  **ජ**  | `j`        |  **ට**  | `t`        |  **ඩ**  | `D`                   |
+|  **ත**  | `th`       |  **ද**  | `d` / `q`  |  **න**  | `n`                   |
+|  **ණ**  | `N`        |  **ප**  | `p`        |  **බ**  | `b`                   |
+|  **ම**  | `m`        |  **ය**  | `y`        |  **ර**  | `r`                   |
+|  **ල**  | `l`        |  **ළ**  | `L`        |  **ව**  | `w` / `v` / `W` / `V` |
+|  **ස**  | `s`        |  **ශ**  | `sh`       |  **ෂ**  | `Sh` / `S`            |
+|  **හ**  | `h`        |  **ෆ**  | `f`        |  **ඞ**  | `X`                   |
 
 #### 🔹 Mahaprana (මහාප්‍රාණ) & Sanyaka (සඤ්ඤක) Consonants
 
-| Type          | Sinhala | Keystrokes          | Type          | Sinhala | Keystrokes     |
-| :------------ | :-----: | :------------------ | :------------ | :-----: | :------------- |
-| **Mahaprana** |  **ඛ**  | `kha` / `Ka` / `Ca` | **Mahaprana** |  **ඝ**  | `gha` / `Ga`   |
-| **Mahaprana** |  **ඡ**  | `chha`              | **Mahaprana** |  **ඣ**  | `Ja`           |
-| **Mahaprana** |  **ඨ**  | `Ta`                | **Mahaprana** |  **ඪ**  | `Da`           |
-| **Mahaprana** |  **ථ**  | `thha`              | **Mahaprana** |  **ධ**  | `dhha`         |
-| **Mahaprana** |  **ඵ**  | `pha` / `Pa`        | **Mahaprana** |  **භ**  | `bha`          |
-| **Sanyaka**   |  **ඟ**  | `zga`               | **Sanyaka**   |  **ඦ**  | `zja`          |
-| **Sanyaka**   |  **ඬ**  | `zda`               | **Sanyaka**   |  **ඳ**  | `zdha` / `zqa` |
-| **Sanyaka**   |  **ඤ**  | `zka`               | **Sanyaka**   |  **ඥ**  | `zha`          |
-| **Sanyaka**   |  **ඹ**  | `Ba`                |               |         |                |
+| Type          | Sinhala | Keystrokes          | Type          | Sinhala | Keystrokes   |
+| :------------ | :-----: | :------------------ | :------------ | :-----: | :----------- |
+| **Mahaprana** |  **ඛ**  | `kh` / `K` / `C`    | **Mahaprana** |  **ඝ**  | `gh` / `G`   |
+| **Mahaprana** |  **ඡ**  | `chh`               | **Mahaprana** |  **ඣ**  | `jh` / `J`   |
+| **Mahaprana** |  **ඨ**  | `T`                 | **Mahaprana** |  **ඪ**  | `Dh`         |
+| **Mahaprana** |  **ථ**  | `thh`               | **Mahaprana** |  **ධ**  | `dh` / `dhh` |
+| **Mahaprana** |  **ඵ**  | `ph` / `P`          | **Mahaprana** |  **භ**  | `bh`         |
+| **Sanyaka**   |  **ඟ**  | `zg`                | **Sanyaka**   |  **ඬ**  | `zD`         |
+| **Sanyaka**   |  **ඳ**  | `zd` / `zdh` / `zq` | **Sanyaka**   |  **ඹ**  | `B`          |
+| **Other**     |  **ඤ**  | `zk`                | **Other**     |  **ඥ**  | `zh`         |
+
+A sanyaka letter never starts a word, so `zga` types `ග`; inside a word, `kazda` ➔ `කඳ`.
 
 #### 🔹 Vowel Signs, Modifiers & Conjuncts
 
-- **Gayanukitta (ෘ / ෲ)**: `ru` ➔ `ෘ`, `ruu` ➔ `ෲ` (e.g. `kru` ➔ `කෘ`)
-- **Anusvaraya (ං)**: `x`, `M`, or `zn` (e.g. `sixhala` / `siMhala` ➔ `සිංහල`)
-- **Visargaya (ඃ)**: `H` (e.g. `duHkha` ➔ `දුඃඛ`)
-- **Automatic Yansaya (`◌්‍ය`)**: Consonant followed immediately by `y` (e.g. `kya` ➔ `ක්‍ය`)
-- **Automatic Rakaransaya (`◌්‍ර`)**: Consonant followed immediately by `r` (e.g. `kra` ➔ `ක්‍ර`)
-- **Double Space**: Pressing `Space` twice automatically inserts a full stop (`. `).
+- **Hal (`◌්`)**: written for a consonant with no vowel (`k` ➔ `ක්`).
+- **Gayanukitta (ෘ / ෲ)**: `kru` / `kR` ➔ `කෘ`, `kruu` / `kRR` ➔ `කෲ`.
+- **Anusvaraya (ං)**: `x`, `M` or `zn` (`siMhala` ➔ `සිංහල`), and `n` before `k` / `g` (`ganga` ➔ `ගංග`).
+- **Visargaya (ඃ)**: `H` (`duHkha` ➔ `දුඃඛ`).
+- **Yansaya and rakaransaya**: automatic (`kya` ➔ `ක්‍ය`, `kra` ➔ `ක්‍ර`); after ම න ල, `r` keeps a plain hal
+  (`dumriya` ➔ `දුම්රිය`).
+- **Repaya**: `karma` ➔ `කර්ම`.
+
+#### 🔹 Dictionary Spelling, Suggestions & Settings
+
+- **Space picks the dictionary spelling** of letters that sound alike: `honda` ➔ `හොඳ`, `bada` ➔ `බඩ`,
+  `lamaya` ➔ `ළමයා`. **Backspace** right after puts back what you typed.
+- **Suggestions** under the word show sound-alikes and completions; pick one with `1`–`5` or a click.
+- **Settings…** (input menu) has the spelling options: rakaransaya + u (`kruura` ➔ `ක්‍රූර`), joined repaya
+  (`කර්‍ම`), classical conjuncts (`අක්‍ෂර`) and archaic letters, plus suggestions and double-space period.
+- **Double Space**: Pressing `Space` twice inserts a full stop (`. `).
 
 ---
 
@@ -302,7 +321,13 @@ akshara-mac/
 ├── src/
 │   ├── SinhalaInputController.m     # Core IMK input method controller & event loop
 │   ├── SinhalaTransliterator.m      # SLS 1134 & Phonetic transliteration engine
-│   ├── SmartPhoneticMaps.m          # Fast dictionary mapping for Smart Phonetic
+│   ├── SmartPhoneticMaps.m          # Classic Smart Phonetic key maps
+│   ├── SmartPhoneticV2.swift        # Grammar-correct Smart Phonetic (port of the research reference)
+│   ├── SoundLexicon.swift           # Sound-alike dictionary lookup for Smart Phonetic
+│   ├── SmartPhoneticService.swift   # Smart Phonetic settings, word list and Space choice
+│   ├── Preferences.swift            # Other settings (suggestions, double-space period)
+│   ├── SettingsView.swift           # SwiftUI Settings window
+│   ├── SmartPhoneticV2Guide.swift   # Typing guide for grammar-correct Smart Phonetic
 │   ├── WelcomeView.swift            # SwiftUI onboarding wizard & activation checker
 │   ├── WelcomeWindowManager.swift   # NSWindow container for SwiftUI views
 │   ├── PhoneticGuideView.swift      # Interactive menu bar guide
@@ -312,7 +337,7 @@ akshara-mac/
 │   ├── Info.plist                   # Input method bundle metadata and mode declarations
 │   └── Resources/                   # Icons, .icns, graphics, localized strings & .keylayout
 ├── script/                          # Build, install, package, and test scripts
-└── tests/                           # Unit tests & 500-word SLS lexicon stress benchmarks
+└── tests/                           # Unit tests, SLS lexicon stress test & Smart Phonetic golden file
 ```
 
 ---

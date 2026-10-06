@@ -28163,7 +28163,6 @@ K	ඩකා	දක
 K	ඩබ්ලියු	දබ්ලියු
 K	ඩයරිය	දයරිය
 K	ඩවුන්ලොඩ්	දවුන්ලොද්
-K	ඩ්	ද්
 K	ඩිංගිරි	දින්ගිරි
 K	ඩිප්ලෝමා	දිප්ලොම
 K	ඩිසයින්	දිසයින්
@@ -30731,6 +30730,7 @@ K	හැකියයි	හෙකියයි
 K	හැගීම්	හෙගිම්
 K	හැගෙන	හෙගෙන
 K	හැටියෙන්	හෙටියෙන්
+K	හැඩි	හෙදි
 K	හැඩේ	හෙදෙ
 K	හැදෑරීමට	හෙදෙරිමට
 K	හැදින්වෙන	හෙදින්වෙන
@@ -31235,7 +31235,7 @@ C	Dzd	0	දණ්ඩ|දාන්ඩ|ඩඳ
 C	Dzd	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
 C	zkph	0	ඤ්ඵ්
 C	zkph	1	
-C	xzdh	0	ඩ්|ද්
+C	xzdh	0	ද්
 C	xzdh	1	ද|දක්වා|දා|දකුණු|දක්නට
 C	SAu	0	ෂෞ
 C	SAu	1	සෞදි|සෞන්දර්ය|සවුදි|සෞන්දර්යය|සවුත්තු
@@ -32395,7 +32395,7 @@ C	ydhh	0	ය්ධ්
 C	ydhh	1	
 C	OoAU	0	ඕවෞ
 C	OoAU	1	
-C	znzq	0	ඩ්|ද්
+C	znzq	0	ද්
 C	znzq	1	ද|දක්වා|දා|දකුණු|දක්නට
 C	phk	0	ඵ්ක්
 C	phk	1	ඵ්ක
@@ -32585,7 +32585,7 @@ C	sAu	0	සෞ
 C	sAu	1	සෞදි|සෞන්දර්ය|සවුදි|සෞන්දර්යය|සවුත්තු
 C	zht	0	ඥ්ට්
 C	zht	1	
-C	xzd	0	ඩ්|ද්
+C	xzd	0	ද්
 C	xzd	1	ද|දක්වා|දා|දකුණු|දක්නට
 C	XOo	0	Xඕ
 C	XOo	1	
@@ -77416,7 +77416,6 @@ R	archaic	ඩකා	ඩකා
 R	archaic	ඩබ්ලියු	ඩබ්ලියු
 R	archaic	ඩයරිය	ඩයරිය
 R	archaic	ඩවුන්ලොඩ්	ඩවුන්ලොඩ්
-R	archaic	ඩ්	ඩ්
 R	archaic	ඩිංගිරි	ඩිංගිරි
 R	archaic	ඩිප්ලෝමා	ඩිප්ලෝමා
 R	archaic	ඩිසයින්	ඩිසයින්
@@ -79984,6 +79983,7 @@ R	archaic	හැකියයි	හැකියයි
 R	archaic	හැගීම්	හැගීම්
 R	archaic	හැගෙන	හැගෙන
 R	archaic	හැටියෙන්	හැටියෙන්
+R	archaic	හැඩි	හැඩි
 R	archaic	හැඩේ	හැඩේ
 R	archaic	හැදෑරීමට	හැදෑරීමට
 R	archaic	හැදින්වෙන	හැදින්වෙන
@@ -80371,7 +80371,7 @@ D	archaic	Dzd	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	archaic	Dzd	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
 D	archaic	zkph	0	ඤ්ඵ්
 D	archaic	zkph	1	
-D	archaic	xzdh	0	ඩ්|ද්
+D	archaic	xzdh	0	ද්
 D	archaic	xzdh	1	ද|දක්වා|දා|දකුණු|දක්නට
 D	archaic	SAu	0	ෂෞ
 D	archaic	SAu	1	සෞදි|සෞන්දර්ය|සවුදි|සෞන්දර්යය|සවුත්තු
@@ -82616,7 +82616,6 @@ R	repaya_zwj	ඩකා	ඩකා
 R	repaya_zwj	ඩබ්ලියු	ඩබ්ලියු
 R	repaya_zwj	ඩයරිය	ඩයරිය
 R	repaya_zwj	ඩවුන්ලොඩ්	ඩවුන්ලොඩ්
-R	repaya_zwj	ඩ්	ඩ්
 R	repaya_zwj	ඩිංගිරි	ඩිංගිරි
 R	repaya_zwj	ඩිප්ලෝමා	ඩිප්ලෝමා
 R	repaya_zwj	ඩිසයින්	ඩිසයින්
@@ -85184,6 +85183,7 @@ R	repaya_zwj	හැකියයි	හැකියයි
 R	repaya_zwj	හැගීම්	හැගීම්
 R	repaya_zwj	හැගෙන	හැගෙන
 R	repaya_zwj	හැටියෙන්	හැටියෙන්
+R	repaya_zwj	හැඩි	හැඩි
 R	repaya_zwj	හැඩේ	හැඩේ
 R	repaya_zwj	හැදෑරීමට	හැදෑරීමට
 R	repaya_zwj	හැදින්වෙන	හැදින්වෙන
@@ -85571,7 +85571,7 @@ D	repaya_zwj	Dzd	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	repaya_zwj	Dzd	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
 D	repaya_zwj	zkph	0	ඤ්ඵ්
 D	repaya_zwj	zkph	1	
-D	repaya_zwj	xzdh	0	ඩ්|ද්
+D	repaya_zwj	xzdh	0	ද්
 D	repaya_zwj	xzdh	1	ද|දක්වා|දා|දකුණු|දක්නට
 D	repaya_zwj	SAu	0	ෂෞ
 D	repaya_zwj	SAu	1	සෞදි|සෞන්දර්‍ය|සවුදි|සෞන්දර්‍යය|සවුත්තු
@@ -87816,7 +87816,6 @@ R	classical	ඩකා	ඩකා
 R	classical	ඩබ්ලියු	ඩබ්ලියු
 R	classical	ඩයරිය	ඩයරිය
 R	classical	ඩවුන්ලොඩ්	ඩවුන්ලොඩ්
-R	classical	ඩ්	ඩ්
 R	classical	ඩිංගිරි	ඩිංගිරි
 R	classical	ඩිප්ලෝමා	ඩිප්ලෝමා
 R	classical	ඩිසයින්	ඩිසයින්
@@ -90384,6 +90383,7 @@ R	classical	හැකියයි	හැකියයි
 R	classical	හැගීම්	හැගීම්
 R	classical	හැගෙන	හැගෙන
 R	classical	හැටියෙන්	හැටියෙන්
+R	classical	හැඩි	හැඩි
 R	classical	හැඩේ	හැඩේ
 R	classical	හැදෑරීමට	හැදෑරීමට
 R	classical	හැදින්වෙන	හැදින්‍වෙන
@@ -90771,7 +90771,7 @@ D	classical	Dzd	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	classical	Dzd	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
 D	classical	zkph	0	ඤ්ඵ්
 D	classical	zkph	1	
-D	classical	xzdh	0	ඩ්|ද්
+D	classical	xzdh	0	ද්
 D	classical	xzdh	1	ද|දක්‍වා|දා|දකුණු|දක්නට
 D	classical	SAu	0	ෂෞ
 D	classical	SAu	1	සෞදි|සෞන්‍දර්ය|සවුදි|සෞන්‍දර්යය|සවුත්තු
@@ -93016,7 +93016,6 @@ R	rakaransaya_u	ඩකා	ඩකා
 R	rakaransaya_u	ඩබ්ලියු	ඩබ්ලියු
 R	rakaransaya_u	ඩයරිය	ඩයරිය
 R	rakaransaya_u	ඩවුන්ලොඩ්	ඩවුන්ලොඩ්
-R	rakaransaya_u	ඩ්	ඩ්
 R	rakaransaya_u	ඩිංගිරි	ඩිංගිරි
 R	rakaransaya_u	ඩිප්ලෝමා	ඩිප්ලෝමා
 R	rakaransaya_u	ඩිසයින්	ඩිසයින්
@@ -95584,6 +95583,7 @@ R	rakaransaya_u	හැකියයි	හැකියයි
 R	rakaransaya_u	හැගීම්	හැගීම්
 R	rakaransaya_u	හැගෙන	හැගෙන
 R	rakaransaya_u	හැටියෙන්	හැටියෙන්
+R	rakaransaya_u	හැඩි	හැඩි
 R	rakaransaya_u	හැඩේ	හැඩේ
 R	rakaransaya_u	හැදෑරීමට	හැදෑරීමට
 R	rakaransaya_u	හැදින්වෙන	හැදින්වෙන
@@ -95971,7 +95971,7 @@ D	rakaransaya_u	Dzd	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	rakaransaya_u	Dzd	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
 D	rakaransaya_u	zkph	0	ඤ්ඵ්
 D	rakaransaya_u	zkph	1	
-D	rakaransaya_u	xzdh	0	ඩ්|ද්
+D	rakaransaya_u	xzdh	0	ද්
 D	rakaransaya_u	xzdh	1	ද|දක්වා|දා|දකුණු|දක්නට
 D	rakaransaya_u	SAu	0	ෂෞ
 D	rakaransaya_u	SAu	1	සෞදි|සෞන්දර්ය|සවුදි|සෞන්දර්යය|සවුත්තු
