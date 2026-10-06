@@ -20,25 +20,25 @@ class WelcomeViewModel: ObservableObject {
     private var checkTimer: Timer?
 
     func startAnimations() {
-        withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+        withAnimation(.easeOut(duration: 0.3).delay(0.05)) {
             showTitle = true
         }
-        withAnimation(.easeOut(duration: 0.8).delay(1.0)) {
+        withAnimation(.easeOut(duration: 0.3).delay(0.12)) {
             showSubtitle = true
         }
-        withAnimation(.easeOut(duration: 0.6).delay(1.8)) {
+        withAnimation(.easeOut(duration: 0.25).delay(0.2)) {
             showStartButton = true
         }
     }
     
     func checkActivationStatus() {
-        if self.isAksharaEnabled() {
-            withAnimation(.easeInOut(duration: 0.5)) {
+        if AksharaSetup.isAksharaEnabled() {
+            withAnimation(.easeInOut(duration: 0.2)) {
                 self.currentScreen = .activated
             }
             return
         } else {
-            withAnimation(.easeInOut(duration: 0.5)) {
+            withAnimation(.easeInOut(duration: 0.2)) {
                 self.currentScreen = .notActivated
             }
         }
@@ -50,9 +50,9 @@ class WelcomeViewModel: ObservableObject {
         checkTimer?.invalidate()
         checkTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
-            if self.isAksharaEnabled() {
+            if AksharaSetup.isAksharaEnabled() {
                 DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.5)) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         self.currentScreen = .activated
                     }
                     self.checkTimer?.invalidate()
@@ -65,8 +65,11 @@ class WelcomeViewModel: ObservableObject {
     deinit {
         checkTimer?.invalidate()
     }
-    
-    private func isAksharaEnabled() -> Bool {
+}
+
+/// Whether an Akshara input source is enabled in System Settings.
+enum AksharaSetup {
+    static func isAksharaEnabled() -> Bool {
         let inputSourceID = "com.local.inputmethod.Akshara"
         let filter = [kTISPropertyInputSourceID as String: inputSourceID] as CFDictionary
         
@@ -89,7 +92,7 @@ class WelcomeViewModel: ObservableObject {
 @available(macOS 11.0, *)
 struct WelcomeView: View {
     var onDismiss: (() -> Void)?
-    @ObservedObject private var viewModel = WelcomeViewModel()
+    @StateObject private var viewModel = WelcomeViewModel()
 
     var body: some View {
         ZStack {
@@ -127,15 +130,10 @@ struct WelcomeView: View {
             Spacer()
                 .frame(height: 40)
             
-            // Logo
-            ZStack {
-                Circle()
-                    .fill(Color.orange.opacity(0.15))
-                    .frame(width: 80, height: 80)
-                Text("අ")
-                    .font(.system(size: 40, weight: .bold))
-                    .foregroundColor(.orange)
-            }
+            // Logo: the Akshara icon, as on Android and iOS
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
             .opacity(viewModel.showTitle ? 1 : 0)
             .offset(y: viewModel.showTitle ? 0 : 10)
             
@@ -213,7 +211,7 @@ struct WelcomeView: View {
             VStack(spacing: 16) {
                 Button(action: {
                     openKeyboardSettings()
-                    withAnimation(.easeInOut(duration: 0.5)) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         viewModel.currentScreen = .instructions
                         viewModel.instructionStep = 0
                     }
@@ -335,7 +333,7 @@ struct WelcomeView: View {
                 
                 if viewModel.instructionStep > 0 {
                     Button(action: {
-                        withAnimation {
+                        withAnimation(.easeInOut(duration: 0.2)) {
                             viewModel.instructionStep -= 1
                         }
                     }) {
@@ -349,7 +347,7 @@ struct WelcomeView: View {
 
                 if viewModel.instructionStep < 4 {
                     Button(action: {
-                        withAnimation {
+                        withAnimation(.easeInOut(duration: 0.2)) {
                             viewModel.instructionStep += 1
                         }
                     }) {

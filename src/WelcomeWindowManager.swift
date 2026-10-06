@@ -9,6 +9,8 @@ import SwiftUI
     private var settingsWindow: NSWindow?
     private var settingsModel: AnyObject?
     private var inputMethodWasActivated = false
+    /// Set when a window was asked for (an akshara:// link), so the launch doesn't add the welcome window too.
+    private var windowRequested = false
 
     private func ensureVisibleAppActivation() {
         if NSApp.activationPolicy() != .regular {
@@ -23,9 +25,18 @@ import SwiftUI
         }
     }
 
-    /// Show the welcome window whenever Akshara is launched.
+    private static let welcomeShownVersionKey = "WelcomeShownVersion"
+
+    /// Shows the welcome window on its own once per version, and only while no Akshara input source is
+    /// enabled. The input method's process starts at every login and whenever macOS relaunches it, so
+    /// showing it on every launch kept bringing it back. It stays one click away in the input menu and
+    /// the Akshara Settings app.
     @objc public func showWelcomeWindowIfNeeded() {
-        guard !inputMethodWasActivated else { return }
+        guard !inputMethodWasActivated, !windowRequested, window == nil, !AksharaSetup.isAksharaEnabled() else { return }
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: Self.welcomeShownVersionKey) != version else { return }
+        defaults.set(version, forKey: Self.welcomeShownVersionKey)
         showWelcomeWindow()
     }
 
@@ -136,7 +147,7 @@ import SwiftUI
         // Setup initial state for animation
         window.alphaValue = 0.0
         var frame = window.frame
-        frame.origin.y += 20 // Start slightly higher for slide down effect
+        frame.origin.y += 8 // Start slightly higher for slide down effect
         window.setFrame(frame, display: false)
         
         window.makeKeyAndOrderFront(nil)
@@ -144,11 +155,37 @@ import SwiftUI
         
         // Animate fade-in and slide-down
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.4
+            context.duration = 0.18
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             window.animator().alphaValue = 1.0
-            frame.origin.y -= 20
+            frame.origin.y -= 8
             window.animator().setFrame(frame, display: true)
+        }
+    }
+
+    // MARK: - akshara:// links
+
+    /// Opens Akshara's windows from links, so the Akshara Settings app in /Applications can show them:
+    /// akshara://settings, akshara://welcome, akshara://guide/smart and akshara://guide/phonetic.
+    @objc public func registerURLHandler() {
+        NSAppleEventManager.shared().setEventHandler(
+            self, andSelector: #selector(handleGetURL(_:withReplyEvent:)),
+            forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
+    }
+
+    @objc private func handleGetURL(_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor) {
+        guard let text = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
+              let url = URL(string: text), url.scheme == "akshara" else { return }
+        windowRequested = true
+        open(url)
+    }
+
+    func open(_ url: URL) {
+        switch (url.host ?? "", url.path) {
+        case ("welcome", _): showWelcomeWindow()
+        case ("guide", "/phonetic"): showPhoneticGuideWithSmartMode(false)
+        case ("guide", _): showPhoneticGuideWithSmartMode(true)
+        default: showSettingsWindow()
         }
     }
 

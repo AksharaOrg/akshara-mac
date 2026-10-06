@@ -11,6 +11,10 @@ DST_DIR="$HOME/Library/Input Methods"
 DST="$DST_DIR/$APP_NAME"
 LEGACY_DST="$DST_DIR/$LEGACY_APP_NAME"
 SYSTEM_DST="/Library/Input Methods/$APP_NAME"
+# Akshara Settings, the app launcher entry that opens the input method's Settings window.
+LAUNCHER_NAME="Akshara Settings.app"
+LAUNCHER_SRC="$ROOT/dist/$LAUNCHER_NAME"
+LAUNCHER_DST="$HOME/Applications/$LAUNCHER_NAME"
 CLEANUP_VERSION="0.1.21"
 
 version_at_least() {
@@ -133,6 +137,19 @@ spin $! "Signing app bundle"
 
 echo "  → macOS will discover the input method from the Input Methods folder"
 
+if [[ -d "$LAUNCHER_SRC" ]]; then
+  (
+      mkdir -p "$HOME/Applications"
+      rm -rf "$LAUNCHER_DST"
+      cp -R "$LAUNCHER_SRC" "$LAUNCHER_DST"
+      "$LSREGISTER" -u "$LAUNCHER_SRC" >/dev/null 2>&1 || true
+      rm -rf "$LAUNCHER_SRC"
+      /usr/bin/xattr -cr "$LAUNCHER_DST" 2>/dev/null || true
+      /usr/bin/codesign --force --sign - "$LAUNCHER_DST" >/dev/null 2>&1
+  ) &
+  spin $! "Installing Akshara Settings to ~/Applications"
+fi
+
 section "Restarting services"
 (
     killall cfprefsd 2>/dev/null || true
@@ -147,7 +164,8 @@ section "Restarting services"
 spin $! "Restarting input method services"
 
 echo -e "\n${GREEN}✔ Akshara installed successfully${RESET}"
-echo -e "${DIM}Location: $DST${RESET}\n"
+echo -e "${DIM}Location: $DST${RESET}"
+echo -e "${DIM}Settings: open Akshara Settings from Launchpad / Apps, or Settings… in the input menu${RESET}\n"
 
 # Show a native glassy restart dialog if running interactively (not in CI)
 if [[ -t 1 ]]; then

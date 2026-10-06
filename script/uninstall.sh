@@ -7,13 +7,16 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_APP="$HOME/Library/Input Methods/$APP_NAME"
 SYSTEM_APP="/Library/Input Methods/$APP_NAME"
+USER_LAUNCHER="$HOME/Applications/Akshara Settings.app"
+SYSTEM_LAUNCHER="/Applications/Akshara Settings.app"
 
 usage() {
   cat <<'EOF'
 Usage: ./script/uninstall.sh [--system]
 
-Removes Akshara from the current user's Input Methods folder. Pass --system to
-also remove the system-wide installation (administrator credentials required).
+Removes Akshara from the current user's Input Methods folder (and Akshara Settings
+from ~/Applications). Pass --system to also remove the system-wide installation
+(administrator credentials required).
 EOF
 }
 
@@ -42,8 +45,10 @@ esac
 
 /usr/bin/swift "$SCRIPT_DIR/cleanup_akshara_sources.swift" >/dev/null 2>&1 || true
 remove_app "$USER_APP" no
+remove_app "$USER_LAUNCHER" no
 if [[ "$remove_system" == true ]]; then
   remove_app "$SYSTEM_APP" yes
+  remove_app "$SYSTEM_LAUNCHER" yes
 fi
 
 # Clear any stale Akshara / CleanIME entries before confirming removal.

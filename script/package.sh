@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Akshara"
 BUNDLE_ID="com.local.inputmethod.Akshara"
-VERSION="${AKSHARA_VERSION:-0.1.0}"
+VERSION="${AKSHARA_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$ROOT/support/Info.plist")}"
 ARCH="${AKSHARA_ARCH:-universal}"
 APP_SIGN_IDENTITY="${AKSHARA_APP_SIGN_IDENTITY:--}"
 PKG_SIGN_IDENTITY="${AKSHARA_PKG_SIGN_IDENTITY:-}"
@@ -14,6 +14,8 @@ NOTARY_KEY_ID="${AKSHARA_NOTARY_KEY_ID:-}"
 NOTARY_ISSUER_ID="${AKSHARA_NOTARY_ISSUER_ID:-}"
 DIST_DIR="$ROOT/dist"
 APP="$DIST_DIR/$APP_NAME.app"
+LAUNCHER_NAME="Akshara Settings"
+LAUNCHER="$DIST_DIR/$LAUNCHER_NAME.app"
 PKG_ROOT="$ROOT/build/pkg-root"
 PKG_SCRIPTS="$ROOT/build/pkg-scripts"
 PKG_RESOURCES="$ROOT/build/pkg-resources"
@@ -95,7 +97,7 @@ section "Preparing build environment"
 (
     sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
     rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST" "$FINAL_PKG"
-    mkdir -p "$PKG_ROOT/Library/Input Methods" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$DIST_DIR"
+    mkdir -p "$PKG_ROOT/Library/Input Methods" "$PKG_ROOT/Applications" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$DIST_DIR"
 ) &
 spin $! "Cleaning previous build artifacts"
 
@@ -106,20 +108,29 @@ section "Staging app bundle"
     /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app/Contents/Info.plist" || true
     /usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
     /usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+
+    # Akshara Settings, so Akshara is listed in Launchpad / Apps and Spotlight.
+    cp -R "$LAUNCHER" "$PKG_ROOT/Applications/$LAUNCHER_NAME.app"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION#v}" "$PKG_ROOT/Applications/$LAUNCHER_NAME.app/Contents/Info.plist" || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$PKG_ROOT/Applications/$LAUNCHER_NAME.app/Contents/Info.plist" || true
+    /usr/bin/xattr -cr "$PKG_ROOT/Applications/$LAUNCHER_NAME.app" 2>/dev/null || true
     /usr/bin/find "$PKG_ROOT" -name '._*' -delete
 ) &
 spin $! "Staging app bundle v${VERSION#v}"
 
 (
-    if [[ "$APP_SIGN_IDENTITY" == "-" ]]; then
-      /usr/bin/codesign --force --sign - "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
-    else
-      /usr/bin/codesign --force --options runtime --timestamp --sign "$APP_SIGN_IDENTITY" "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
-    fi
+    for bundle in "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" "$PKG_ROOT/Applications/$LAUNCHER_NAME.app"; do
+      if [[ "$APP_SIGN_IDENTITY" == "-" ]]; then
+        /usr/bin/codesign --force --sign - "$bundle" >/dev/null
+      else
+        /usr/bin/codesign --force --options runtime --timestamp --sign "$APP_SIGN_IDENTITY" "$bundle" >/dev/null
+      fi
+    done
     /usr/bin/xattr -cr "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
     /usr/bin/xattr -r -d com.apple.provenance "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
     /usr/bin/find "$PKG_ROOT" -name '._*' -delete
     /usr/bin/codesign --verify --deep --strict "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" >/dev/null
+    /usr/bin/codesign --verify --deep --strict "$PKG_ROOT/Applications/$LAUNCHER_NAME.app" >/dev/null
 ) &
 spin $! "Signing app bundle"
 
@@ -142,6 +153,12 @@ if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" 
   if [ -d "$USER_APP" ]; then
     "$LSREGISTER" -u "$USER_APP" >/dev/null 2>&1 || true
     /bin/rm -rf "$USER_APP"
+  fi
+  # Likewise the source installer's Akshara Settings in ~/Applications (the package puts it in /Applications).
+  USER_LAUNCHER="$USER_HOME/Applications/Akshara Settings.app"
+  if [ -d "$USER_LAUNCHER" ]; then
+    "$LSREGISTER" -u "$USER_LAUNCHER" >/dev/null 2>&1 || true
+    /bin/rm -rf "$USER_LAUNCHER"
   fi
 fi
 
@@ -195,7 +212,8 @@ fi
 # Show the setup guide to the logged-in user after a new installation.
 if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ] && [ "$CONSOLE_USER" != "loginwindow" ]; then
   CONSOLE_UID="$(/usr/bin/id -u "$CONSOLE_USER")"
-  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open -n "$APP" >/dev/null 2>&1 || true
+  # Not -n: a second copy of the input method would run beside the one macOS manages.
+  /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open "$APP" >/dev/null 2>&1 || true
 
   # The package installer runs as root, so present a native NSAlert inside the
   # logged-in user's GUI session after the update has finished copying.
@@ -267,13 +285,17 @@ spin $! "Writing welcome page"
 
 section "Building installer package"
 (
-    # Input methods must stay in /Library/Input Methods.
+    # Input methods must stay in /Library/Input Methods, and Akshara Settings in /Applications.
     /usr/bin/pkgbuild --analyze --root "$PKG_ROOT" "$COMPONENT_PLIST"
-    if /usr/libexec/PlistBuddy -c "Print :0:BundleIsRelocatable" "$COMPONENT_PLIST" >/dev/null 2>&1; then
-      /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENT_PLIST"
-    else
-      /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$COMPONENT_PLIST"
-    fi
+    index=0
+    while /usr/libexec/PlistBuddy -c "Print :$index" "$COMPONENT_PLIST" >/dev/null 2>&1; do
+      if /usr/libexec/PlistBuddy -c "Print :$index:BundleIsRelocatable" "$COMPONENT_PLIST" >/dev/null 2>&1; then
+        /usr/libexec/PlistBuddy -c "Set :$index:BundleIsRelocatable false" "$COMPONENT_PLIST"
+      else
+        /usr/libexec/PlistBuddy -c "Add :$index:BundleIsRelocatable bool false" "$COMPONENT_PLIST"
+      fi
+      index=$((index + 1))
+    done
 
     /usr/bin/pkgbuild \
       --root "$PKG_ROOT" \
@@ -338,10 +360,12 @@ section "Cleaning up"
     LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
     "$LSR" -u "$APP" 2>/dev/null || true
     "$LSR" -u "$PKG_ROOT/Library/Input Methods/$APP_NAME.app" 2>/dev/null || true
+    "$LSR" -u "$LAUNCHER" 2>/dev/null || true
+    "$LSR" -u "$PKG_ROOT/Applications/$LAUNCHER_NAME.app" 2>/dev/null || true
   "$LSR" -u "$PKG_ROOT" 2>/dev/null || true
     sudo chmod -R 755 "$PKG_ROOT" 2>/dev/null || true
     rm -rf "$PKG_ROOT" "$PKG_SCRIPTS" "$PKG_RESOURCES" "$PKG_DISTRIBUTION" "$COMPONENT_PKG" "$COMPONENT_PLIST"
-    rm -rf "$APP"
+    rm -rf "$APP" "$LAUNCHER"
   "$LSR" -u "$PKG_ROOT" 2>/dev/null || true
 ) &
 spin $! "Removing intermediate build files"

@@ -457,12 +457,18 @@ SWIFT_CLASS("_TtC7Akshara20WelcomeWindowManager")
 @interface WelcomeWindowManager : NSObject <NSWindowDelegate>
 SWIFT_CLASS_PROPERTY(@property (nonatomic, class, readonly, strong) WelcomeWindowManager * _Nonnull shared;)
 + (WelcomeWindowManager * _Nonnull)shared SWIFT_WARN_UNUSED_RESULT;
-/// Show the welcome window whenever Akshara is launched.
+/// Shows the welcome window on its own once per version, and only while no Akshara input source is
+/// enabled. The input method’s process starts at every login and whenever macOS relaunches it, so
+/// showing it on every launch kept bringing it back. It stays one click away in the input menu and
+/// the Akshara Settings app.
 - (void)showWelcomeWindowIfNeeded;
 - (void)markInputMethodActivated;
 - (void)showWelcomeWindow;
 - (void)closeWelcomeWindow;
 - (void)showPhoneticGuideWithSmartMode:(BOOL)isSmart;
+/// Opens Akshara’s windows from links, so the Akshara Settings app in /Applications can show them:
+/// akshara://settings, akshara://welcome, akshara://guide/smart and akshara://guide/phonetic.
+- (void)registerURLHandler;
 /// Akshara’s settings, like the Android app’s (the input menu’s “Settings…”).
 - (void)showSettingsWindow;
 - (void)windowWillClose:(NSNotification * _Nonnull)notification;

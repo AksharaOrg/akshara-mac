@@ -23,4 +23,11 @@ assert 'rm -rf "$APP"' in package_script, 'package.sh should remove the generate
 assert 'sourceID.hasPrefix(bundleID + ".")' in enable_script, 'registration should recognize component input-source IDs'
 assert '!hasRegisteredInputSource(for: bundleID)' in enable_script, 'registration should be idempotent'
 
+uninstall_script = (root / 'script' / 'uninstall.sh').read_text()
+build_script = (root / 'script' / 'build_and_run.sh').read_text()
+assert '$HOME/Applications/$LAUNCHER_NAME' in install_script, 'install.sh should install Akshara Settings to ~/Applications'
+assert '$PKG_ROOT/Applications/$LAUNCHER_NAME.app' in package_script, 'package.sh should stage Akshara Settings in /Applications'
+assert 'Akshara Settings.app' in uninstall_script, 'uninstall.sh should remove Akshara Settings'
+assert 'open -n' not in package_script + build_script, 'launching with open -n starts a second input method process'
+
 print('migration gate checks passed')

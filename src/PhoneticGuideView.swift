@@ -42,14 +42,9 @@ struct PhoneticGuideView: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "text.cursor")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.accentColor)
-            }
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 48, height: 48)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(modeName) Typing")
@@ -394,7 +389,7 @@ struct CollapsibleGuideSection<Content: View>: View {
 
     var body: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                 expandState.isExpanded.toggle()
             }
         }) {

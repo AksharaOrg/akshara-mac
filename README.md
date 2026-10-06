@@ -36,7 +36,7 @@ Whether you prefer rapid **Smart Phonetic**, standard **Singlish Phonetic**, or 
   - **`Akshara - Wijesekara (SLS 1134)`**: Full compliance with Sri Lanka standard SLS 1134 keyboard layout with live visual-to-Unicode reordering.
 - **Interactive Wijesekara Keyboard Viewer**: Live macOS on-screen keyboard viewer with interactive Shift & Option layer visualization.
 - **Quick Guide & Cheat Sheet**: Instant access to phonetic rules and vowel signs directly from the macOS input menu bar.
-- **Settings Window**: Spelling options, suggestions and double-space period, from **Settings…** in the input menu.
+- **Settings App**: **Akshara Settings** in Launchpad / Apps (or **Settings…** in the input menu): spelling options, suggestions, double-space period, the setup and typing guides, and About.
 - **Double-Space Period**: Pressing `Space` twice automatically inserts `. ` across all input modes.
 - **Built-in Auto Updater**: Background release checks and convenient in-app update prompts via GitHub Releases.
 - **Clean, Secure & Private**: Fully sandboxed with no analytics, keylogging, telemetry, or external network requests.
@@ -236,6 +236,7 @@ Open **System Settings**, add an input source for **Sinhala**, and select one of
    - `Akshara - Phonetic`
    - `Akshara - Wijesekara`
 6. Click **Add**. Switch between input sources anytime using `⌃ Control` + `Space` or via the menu bar input menu!
+7. Open **Akshara Settings** from Launchpad / Apps or Spotlight for settings and the typing guides.
 
 ---
 
@@ -264,6 +265,9 @@ The project includes build and maintenance scripts in [`script/`](file:///Users/
 # Create a signed/distributable .pkg installer package
 ./script/package.sh
 
+# Rebuild the app and menu-bar icons from support/IconSource
+./script/generate_icons.sh
+
 # Uninstall user-level installation
 ./script/uninstall.sh
 
@@ -283,7 +287,7 @@ Build a distributable installer package:
 ./script/package.sh
 ```
 
-The package is written to `dist/Akshara-0.1.0.pkg`. It installs Akshara to `/Library/Input Methods/Akshara.app`, registers the bundle with macOS, and restarts Text Input services. After installation, add `Akshara - Wijesekara` or `Akshara - Phonetic` from **System Settings ➔ Keyboard ➔ Input Sources**.
+The package is written to `dist/Akshara-<version>-<arch>.pkg` (the version comes from `support/Info.plist` unless `AKSHARA_VERSION` is set). It installs Akshara to `/Library/Input Methods/Akshara.app` and **Akshara Settings** to `/Applications`, registers the bundle with macOS, and restarts Text Input services. After installation, add `Akshara - Wijesekara` or `Akshara - Phonetic` from **System Settings ➔ Keyboard ➔ Input Sources**.
 
 The local package is ad-hoc signed for development. For public distribution, sign the app with a Developer ID Application certificate, sign the package with a Developer ID Installer certificate, notarize it with Apple, and staple the notarization ticket.
 
@@ -332,10 +336,14 @@ akshara-mac/
 │   ├── WelcomeWindowManager.swift   # NSWindow container for SwiftUI views
 │   ├── PhoneticGuideView.swift      # Interactive menu bar guide
 │   ├── AutoUpdater.m                # Background GitHub Releases update checker
-│   └── main.m                       # App initialization & IMKServer entrypoint
+│   └── main.m                       # App initialization, IMKServer entrypoint & akshara:// links
+├── launcher/
+│   └── main.swift                   # Akshara Settings: opens the input method's Settings (akshara://settings)
 ├── support/
 │   ├── Info.plist                   # Input method bundle metadata and mode declarations
-│   └── Resources/                   # Icons, .icns, graphics, localized strings & .keylayout
+│   ├── Launcher/Info.plist          # Akshara Settings bundle metadata
+│   ├── IconSource/                  # The Akshara icon shared with Android and iOS (icon masters)
+│   └── Resources/                   # Icons, .icns, graphics, word list, contributors & .keylayout
 ├── script/                          # Build, install, package, and test scripts
 └── tests/                           # Unit tests, SLS lexicon stress test & Smart Phonetic golden file
 ```
