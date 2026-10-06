@@ -30,4 +30,22 @@ assert '$PKG_ROOT/Applications/$LAUNCHER_NAME.app' in package_script, 'package.s
 assert 'Akshara Settings.app' in uninstall_script, 'uninstall.sh should remove Akshara Settings'
 assert 'open -n' not in package_script + build_script, 'launching with open -n starts a second input method process'
 
+# A window the app keeps a reference to must not also be released by AppKit when it closes: that
+# over-release crashed Akshara when Welcome or a typing guide was closed.
+for source in (root / 'src').glob('*.swift'):
+    text = source.read_text()
+    assert text.count('NSWindow(') <= text.count('isReleasedWhenClosed = false'), \
+        f'{source.name}: set isReleasedWhenClosed = false on every NSWindow it creates'
+
+# Fresh installs: the input method registers itself (only from an Input Methods folder), and the
+# package scripts don't need the developer tools (/usr/bin/swift is a stub without them).
+main_source = (root / 'src' / 'main.m').read_text()
+release_script = (root / 'script' / 'release.sh').read_text()
+assert 'TISRegisterInputSource' in main_source and '@"Input Methods"' in main_source, \
+    'main.m should register its input sources when it runs from an Input Methods folder'
+assert 'swift "$DIALOG_SOURCE"' not in package_script, 'the restart prompt must not need /usr/bin/swift'
+assert 'xcode-select -p' in package_script, 'package.sh should run swift only when the developer tools are installed'
+assert '$PKG_SCRIPTS/preinstall' in package_script, 'package.sh should tell an update from a fresh install'
+assert 'upstream/main' in release_script, 'release.sh should only tag upstream/main'
+
 print('migration gate checks passed')
