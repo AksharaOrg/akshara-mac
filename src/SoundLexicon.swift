@@ -69,7 +69,7 @@ final class SoundLexicon {
         var ranked = SoundLexicon.unique(
             SoundLexicon.unique(exact(key)).sorted(by: byFrequency).map { SoundLexicon.restyle($0, options: options) }
         )
-        if ranked.contains(spelled) && SoundLexicon.isExplicit(roman) {
+        if SoundLexicon.isExplicit(roman) && (ranked.contains(spelled) || SoundLexicon.isLoneVowel(spelled)) {
             ranked = [spelled] + ranked.filter { $0 != spelled }   // explicit markers beat frequency
         } else if !ranked.contains(spelled) {
             ranked.append(spelled)                                // the rule spelling is always included
@@ -136,6 +136,13 @@ final class SoundLexicon {
 
     static func isExplicit(_ roman: String) -> Bool {
         explicit.firstMatch(in: roman, range: NSRange(roman.startIndex..., in: roman)) != nil
+    }
+
+    /// One independent vowel letter (අ … ඖ). A list has no such words, yet a letter typed on its own is
+    /// meant as that letter: frequency would turn ඍ into රු and ඓ into අයි.
+    static func isLoneVowel(_ spelling: String) -> Bool {
+        let scalars = spelling.unicodeScalars
+        return scalars.count == 1 && (0x0D85...0x0D96).contains(scalars.first!.value)
     }
 
     private static func scalars(_ text: String) -> [Unicode.Scalar] { Array(text.unicodeScalars) }

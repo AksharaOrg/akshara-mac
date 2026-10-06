@@ -103,10 +103,12 @@ final class SmartPhoneticService: NSObject {
     /// Whole words that sound like `roman`. An explicit spelling (`kazda`, `aa` …) that is a word stays first.
     private func words(_ lexicon: SoundLexicon, _ roman: String) -> [String] {
         let options = self.options
-        // Candidates come back in the style of the options; keep those whose dictionary spelling is a word.
-        let exact = lexicon.candidates(roman, limit: Self.pool, options: options).filter { countOf(lexicon, $0) > 0 }
+        let all = lexicon.candidates(roman, limit: Self.pool, options: options)
         let spelled = SmartPhoneticV2.transliterate(roman, options: options)
-        let pinned = exact.first.flatMap { $0 == spelled && SoundLexicon.isExplicit(roman) ? $0 : nil }
+        // The reference puts an explicit spelling first when it is a word or a lone vowel letter (R ඍ).
+        let pinned = all.first.flatMap { $0 == spelled && SoundLexicon.isExplicit(roman) ? $0 : nil }
+        // Candidates come back in the style of the options; keep those whose dictionary spelling is a word.
+        let exact = all.filter { countOf(lexicon, $0) > 0 }
         let ranked = byFrequency(exact, lexicon)
         return (pinned.map { [$0] } ?? []) + ranked.filter { $0 != pinned }
     }

@@ -111,6 +111,11 @@ struct SmartPhoneticV2Tests {
         expect("hond: completion", service.candidates(forRoman: "hond", limit: 5).first ?? "", "හොඳ")
         expect("kazda: explicit spelling kept", service.choice(forRoman: "kazda") ?? "nil", "කඳ")
         expect("kramaya: not in the list, rules kept", service.choice(forRoman: "kramaya") ?? "nil", "nil")
+        // A lone vowel letter typed with a marker stays; unmarked vowels are matched by sound.
+        for (roman, letter) in [("A", "ඇ"), ("Aa", "ඈ"), ("R", "ඍ"), ("E", "ඓ"), ("Au", "ඖ"), ("O", "ඔ"),
+                                ("e", "ඒ"), ("o", "ඕ")] {
+            expect("lone vowel \(roman)", service.choice(forRoman: roman) ?? "nil", letter)
+        }
         // The dictionary examples in the typing guide (SmartPhoneticV2Guide.swift).
         for (roman, word) in [("honda", "හොඳ"), ("sinhala", "සිංහල"), ("bada", "බඩ"), ("lamaya", "ළමයා"),
                               ("pilithura", "පිළිතුර"), ("kalu", "කළු"), ("keema", "කෑම"), ("amma", "අම්මා")] {

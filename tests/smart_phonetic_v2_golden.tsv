@@ -31017,6 +31017,36 @@ C	sinh	0	සින්හ්
 C	sinh	1	සිංහල|සිංහලෙන්|සිංහ|සිංහලයන්|සිංහලයා
 C	vidy	0	විද්‍ය්
 C	vidy	1	විද්‍යුත්|විද්‍යා|විද්‍යාව|විද්‍යාල
+C	a	0	අ
+C	a	1	ආකාරය|ආගමික|ආකාරයට|අගය|අගමැති
+C	A	0	ඇ|ඒ|එ
+C	A	1	ඒ|එක|එකක්|ඒක|එක්ක
+C	ae	0	ඇ|ඒ|එ
+C	ae	1	ඒ|එක|එකක්|ඒක|එක්ක
+C	Aa	0	ඈ|ඒ|එ
+C	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
+C	aee	0	ඈ|ඒ|එ
+C	aee	1	ඒ|එක|එකක්|ඒක|එක්ක
+C	R	0	ඍ|රු|රූ
+C	R	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+C	RR	0	ඍ|රු|රූ
+C	RR	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+C	e	0	ඒ|එ
+C	e	1	ඒ|එක|එකක්|ඒක|එක්ක
+C	ee	0	ඒ|එ
+C	ee	1	ඒ|එක|එකක්|ඒක|එක්ක
+C	E	0	ඓ|අයි|ආයි
+C	E	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+C	o	0	ඕ|ඔ
+C	o	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+C	O	0	ඔ|ඕ
+C	O	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+C	Au	0	ඖ|අවු
+C	Au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
+C	ai	0	අයි|ආයි
+C	ai	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+C	au	0	අවු
+C	au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
 C	thaaththaa	0	තාත්තා|තාත්ත
 C	thaaththaa	1	තත්ත්වය|තාත්තා|තත්ත්වයක්|තත්ත්වයට|තාත්ත
 C	oyaa	0	ඔයා|ඔය|ඕය
@@ -31777,8 +31807,6 @@ C	aOO	0	ආවෝ|අවෝ
 C	aOO	1	ආවොත්|අවොත්|ආවෝ
 C	Dzdh	0	දණ්ඩ|දාන්ඩ|ඩඳ
 C	Dzdh	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
-C	Aa	0	ඒ|එ|ඈ
-C	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
 C	zhe	0	ඥෙ
 C	zhe	1	
 C	zdaee	0	දෑ|දේ|දෙ|දැ|ඩේ
@@ -32155,7 +32183,7 @@ C	zdho	0	දෝ|ඩො|ඩෝ|දො
 C	zdho	1	ඩොලර්|දොර|දොස්තර|ඩොලරය|දොස්
 C	Vsh	0	ව්ශ්
 C	Vsh	1	
-C	AA	0	ඒ|එ|ඈ
+C	AA	0	ඈ|ඒ|එ
 C	AA	1	ඒ|එක|එකක්|ඒක|එක්ක
 C	tsh	0	ට්ශ්
 C	tsh	1	
@@ -32501,8 +32529,6 @@ C	Ne	0	නෑ|නේ|නැ|නෙ|ණෙ
 C	Ne	1	නෑ|නැති|නැත|නේද|නැතුව
 C	fR	0	ෆෘ
 C	fR	1	ෆෘට්
-C	O	0	ඕ|ඔ
-C	O	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
 C	AAAu	0	ඈයෞ
 C	AAAu	1	
 C	uUu	0	උවූ
@@ -80153,6 +80179,36 @@ D	archaic	sinh	0	සින්හ්
 D	archaic	sinh	1	සිංහල|සිංහලෙන්|සිංහ|සිංහලයන්|සිංහලයා
 D	archaic	vidy	0	විද්‍ය්
 D	archaic	vidy	1	විද්‍යුත්|විද්‍යා|විද්‍යාව|විද්‍යාල
+D	archaic	a	0	අ
+D	archaic	a	1	ආකාරය|ආගමික|ආකාරයට|අගය|අගමැති
+D	archaic	A	0	ඇ|ඒ|එ
+D	archaic	A	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	archaic	ae	0	ඇ|ඒ|එ
+D	archaic	ae	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	archaic	Aa	0	ඈ|ඒ|එ
+D	archaic	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	archaic	aee	0	ඈ|ඒ|එ
+D	archaic	aee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	archaic	R	0	ඍ|රු|රූ
+D	archaic	R	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	archaic	RR	0	ඎ|රු|රූ
+D	archaic	RR	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	archaic	e	0	ඒ|එ
+D	archaic	e	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	archaic	ee	0	ඒ|එ
+D	archaic	ee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	archaic	E	0	ඓ|අයි|ආයි
+D	archaic	E	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	archaic	o	0	ඕ|ඔ
+D	archaic	o	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	archaic	O	0	ඔ|ඕ
+D	archaic	O	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	archaic	Au	0	ඖ|අවු
+D	archaic	Au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
+D	archaic	ai	0	අයි|ආයි
+D	archaic	ai	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	archaic	au	0	අවු
+D	archaic	au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
 D	archaic	thaaththaa	0	තාත්තා|තාත්ත
 D	archaic	thaaththaa	1	තත්ත්වය|තාත්තා|තත්ත්වයක්|තත්ත්වයට|තාත්ත
 D	archaic	oyaa	0	ඔයා|ඔය|ඕය
@@ -80913,8 +80969,6 @@ D	archaic	aOO	0	ආවෝ|අවෝ
 D	archaic	aOO	1	ආවොත්|අවොත්|ආවෝ
 D	archaic	Dzdh	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	archaic	Dzdh	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
-D	archaic	Aa	0	ඒ|එ|ඈ
-D	archaic	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
 D	archaic	zhe	0	ඥෙ
 D	archaic	zhe	1	
 D	archaic	zdaee	0	දෑ|දේ|දෙ|දැ|ඩේ
@@ -81263,34 +81317,6 @@ D	archaic	CE	0	කයි|ඛෛ
 D	archaic	CE	1	කායික|කයි|කයිවාරු|කයිය|කයිට්ස්
 D	archaic	Dhkh	0	ඪ්ඛ්
 D	archaic	Dhkh	1	
-D	archaic	yo	0	යෝ|යො
-D	archaic	yo	1	යොමු|යොදා|යෝජනා|යෝජනාව|යොදවා
-D	archaic	qph	0	ද්ඵ්
-D	archaic	qph	1	
-D	archaic	Gii	0	ගී|ගි|ඝී
-D	archaic	Gii	1	ගිය|ගිහින්|ගියා|ගියේ|ගිනි
-D	archaic	khW	0	ඛ්ව්
-D	archaic	khW	1	ක්වොන්ටම්|ක්වූ|ක්වාන්|ක්ව|ක්වාලාලම්පූර්
-D	archaic	Up	0	උප්
-D	archaic	Up	1	උපදෙස්|උපන්|උපරිම|උපකරණ|උප
-D	archaic	fph	0	ෆ්ඵ්
-D	archaic	fph	1	
-D	archaic	jhzh	0	ඣ්ඥ්
-D	archaic	jhzh	1	
-D	archaic	BJ	0	බ්ඣ්
-D	archaic	BJ	1	
-D	archaic	aeeph	0	ඇප්|ඈඵ්
-D	archaic	aeeph	1	එපා|ඇප|ඇපල්|එපැයි|එපමණක්
-D	archaic	khOo	0	කෝ|කො|ඛෝ
-D	archaic	khOo	1	කොට|කොටස්|කොටස|කොච්චර|කොටි
-D	archaic	uzdh	0	උණ්ඩ|උන්ද|උඳ
-D	archaic	uzdh	1	උණ්ඩ|උන්දැ|උන්දෑ|උන්දැට|උඳුවප්
-D	archaic	zhG	0	ඥ්ඝ්
-D	archaic	zhG	1	
-D	archaic	zdho	0	දෝ|ඩො|ඩෝ|දො
-D	archaic	zdho	1	ඩොලර්|දොර|දොස්තර|ඩොලරය|දොස්
-D	archaic	Vsh	0	ව්ශ්
-D	archaic	Vsh	1	
 R	repaya_zwj	අං	අං
 R	repaya_zwj	අංගයක්	අංගයක්
 R	repaya_zwj	අංගුත්තර	අංගුත්තර
@@ -85353,6 +85379,36 @@ D	repaya_zwj	sinh	0	සින්හ්
 D	repaya_zwj	sinh	1	සිංහල|සිංහලෙන්|සිංහ|සිංහලයන්|සිංහලයා
 D	repaya_zwj	vidy	0	විද්‍ය්
 D	repaya_zwj	vidy	1	විද්‍යුත්|විද්‍යා|විද්‍යාව|විද්‍යාල
+D	repaya_zwj	a	0	අ
+D	repaya_zwj	a	1	ආකාරය|ආගමික|ආකාරයට|අගය|අගමැති
+D	repaya_zwj	A	0	ඇ|ඒ|එ
+D	repaya_zwj	A	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	repaya_zwj	ae	0	ඇ|ඒ|එ
+D	repaya_zwj	ae	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	repaya_zwj	Aa	0	ඈ|ඒ|එ
+D	repaya_zwj	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	repaya_zwj	aee	0	ඈ|ඒ|එ
+D	repaya_zwj	aee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	repaya_zwj	R	0	ඍ|රු|රූ
+D	repaya_zwj	R	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	repaya_zwj	RR	0	ඍ|රු|රූ
+D	repaya_zwj	RR	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	repaya_zwj	e	0	ඒ|එ
+D	repaya_zwj	e	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	repaya_zwj	ee	0	ඒ|එ
+D	repaya_zwj	ee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	repaya_zwj	E	0	ඓ|අයි|ආයි
+D	repaya_zwj	E	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	repaya_zwj	o	0	ඕ|ඔ
+D	repaya_zwj	o	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	repaya_zwj	O	0	ඔ|ඕ
+D	repaya_zwj	O	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	repaya_zwj	Au	0	ඖ|අවු
+D	repaya_zwj	Au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
+D	repaya_zwj	ai	0	අයි|ආයි
+D	repaya_zwj	ai	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	repaya_zwj	au	0	අවු
+D	repaya_zwj	au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
 D	repaya_zwj	thaaththaa	0	තාත්තා|තාත්ත
 D	repaya_zwj	thaaththaa	1	තත්ත්වය|තාත්තා|තත්ත්වයක්|තත්ත්වයට|තාත්ත
 D	repaya_zwj	oyaa	0	ඔයා|ඔය|ඕය
@@ -86113,8 +86169,6 @@ D	repaya_zwj	aOO	0	ආවෝ|අවෝ
 D	repaya_zwj	aOO	1	ආවොත්|අවොත්|ආවෝ
 D	repaya_zwj	Dzdh	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	repaya_zwj	Dzdh	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
-D	repaya_zwj	Aa	0	ඒ|එ|ඈ
-D	repaya_zwj	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
 D	repaya_zwj	zhe	0	ඥෙ
 D	repaya_zwj	zhe	1	
 D	repaya_zwj	zdaee	0	දෑ|දේ|දෙ|දැ|ඩේ
@@ -86463,34 +86517,6 @@ D	repaya_zwj	CE	0	කයි|ඛෛ
 D	repaya_zwj	CE	1	කායික|කයි|කයිවාරු|කයිය|කයිට්ස්
 D	repaya_zwj	Dhkh	0	ඪ්ඛ්
 D	repaya_zwj	Dhkh	1	
-D	repaya_zwj	yo	0	යෝ|යො
-D	repaya_zwj	yo	1	යොමු|යොදා|යෝජනා|යෝජනාව|යොදවා
-D	repaya_zwj	qph	0	ද්ඵ්
-D	repaya_zwj	qph	1	
-D	repaya_zwj	Gii	0	ගී|ගි|ඝී
-D	repaya_zwj	Gii	1	ගිය|ගිහින්|ගියා|ගියේ|ගිනි
-D	repaya_zwj	khW	0	ඛ්ව්
-D	repaya_zwj	khW	1	ක්වොන්ටම්|ක්වූ|ක්වාන්|ක්ව|ක්වාලාලම්පූර්
-D	repaya_zwj	Up	0	උප්
-D	repaya_zwj	Up	1	උපදෙස්|උපන්|උපරිම|උපකරණ|උප
-D	repaya_zwj	fph	0	ෆ්ඵ්
-D	repaya_zwj	fph	1	
-D	repaya_zwj	jhzh	0	ඣ්ඥ්
-D	repaya_zwj	jhzh	1	
-D	repaya_zwj	BJ	0	බ්ඣ්
-D	repaya_zwj	BJ	1	
-D	repaya_zwj	aeeph	0	ඇප්|ඈඵ්
-D	repaya_zwj	aeeph	1	එපා|ඇප|ඇපල්|එපැයි|එපමණක්
-D	repaya_zwj	khOo	0	කෝ|කො|ඛෝ
-D	repaya_zwj	khOo	1	කොට|කොටස්|කොටස|කොච්චර|කොටි
-D	repaya_zwj	uzdh	0	උණ්ඩ|උන්ද|උඳ
-D	repaya_zwj	uzdh	1	උණ්ඩ|උන්දැ|උන්දෑ|උන්දැට|උඳුවප්
-D	repaya_zwj	zhG	0	ඥ්ඝ්
-D	repaya_zwj	zhG	1	
-D	repaya_zwj	zdho	0	දෝ|ඩො|ඩෝ|දො
-D	repaya_zwj	zdho	1	ඩොලර්|දොර|දොස්තර|ඩොලරය|දොස්
-D	repaya_zwj	Vsh	0	ව්ශ්
-D	repaya_zwj	Vsh	1	
 R	classical	අං	අං
 R	classical	අංගයක්	අංගයක්
 R	classical	අංගුත්තර	අංගුත්තර
@@ -90553,6 +90579,36 @@ D	classical	sinh	0	සින්හ්
 D	classical	sinh	1	සිංහල|සිංහලෙන්|සිංහ|සිංහලයන්|සිංහලයා
 D	classical	vidy	0	විද්‍ය්
 D	classical	vidy	1	විද්‍යුත්|විද්‍යා|විද්‍යාව|විද්‍යාල
+D	classical	a	0	අ
+D	classical	a	1	ආකාරය|ආගමික|ආකාරයට|අගය|අගමැති
+D	classical	A	0	ඇ|ඒ|එ
+D	classical	A	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	classical	ae	0	ඇ|ඒ|එ
+D	classical	ae	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	classical	Aa	0	ඈ|ඒ|එ
+D	classical	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	classical	aee	0	ඈ|ඒ|එ
+D	classical	aee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	classical	R	0	ඍ|රු|රූ
+D	classical	R	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	classical	RR	0	ඍ|රු|රූ
+D	classical	RR	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	classical	e	0	ඒ|එ
+D	classical	e	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	classical	ee	0	ඒ|එ
+D	classical	ee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	classical	E	0	ඓ|අයි|ආයි
+D	classical	E	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	classical	o	0	ඕ|ඔ
+D	classical	o	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	classical	O	0	ඔ|ඕ
+D	classical	O	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	classical	Au	0	ඖ|අවු
+D	classical	Au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
+D	classical	ai	0	අයි|ආයි
+D	classical	ai	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	classical	au	0	අවු
+D	classical	au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
 D	classical	thaaththaa	0	තාත්තා|තාත්ත
 D	classical	thaaththaa	1	තත්ත්‍වය|තාත්තා|තත්ත්‍වයක්|තත්ත්‍වයට|තාත්ත
 D	classical	oyaa	0	ඔයා|ඔය|ඕය
@@ -91313,8 +91369,6 @@ D	classical	aOO	0	ආවෝ|අවෝ
 D	classical	aOO	1	ආවොත්|අවොත්|ආවෝ
 D	classical	Dzdh	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	classical	Dzdh	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
-D	classical	Aa	0	ඒ|එ|ඈ
-D	classical	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
 D	classical	zhe	0	ඥෙ
 D	classical	zhe	1	
 D	classical	zdaee	0	දෑ|දේ|දෙ|දැ|ඩේ
@@ -91663,34 +91717,6 @@ D	classical	CE	0	කයි|ඛෛ
 D	classical	CE	1	කායික|කයි|කයිවාරු|කයිය|කයිට්ස්
 D	classical	Dhkh	0	ඪ්ඛ්
 D	classical	Dhkh	1	
-D	classical	yo	0	යෝ|යො
-D	classical	yo	1	යොමු|යොදා|යෝජනා|යෝජනාව|යොදවා
-D	classical	qph	0	ද්ඵ්
-D	classical	qph	1	
-D	classical	Gii	0	ගී|ගි|ඝී
-D	classical	Gii	1	ගිය|ගිහින්|ගියා|ගියේ|ගිනි
-D	classical	khW	0	ඛ්ව්
-D	classical	khW	1	ක්‍වොන්ටම්|ක්‍වූ|ක්‍වාන්|ක්‍ව|ක්‍වාලාලම්පූර්
-D	classical	Up	0	උප්
-D	classical	Up	1	උපදෙස්|උපන්|උපරිම|උපකරණ|උප
-D	classical	fph	0	ෆ්ඵ්
-D	classical	fph	1	
-D	classical	jhzh	0	ඣ්ඥ්
-D	classical	jhzh	1	
-D	classical	BJ	0	බ්ඣ්
-D	classical	BJ	1	
-D	classical	aeeph	0	ඇප්|ඈඵ්
-D	classical	aeeph	1	එපා|ඇප|ඇපල්|එපැයි|එපමණක්
-D	classical	khOo	0	කෝ|කො|ඛෝ
-D	classical	khOo	1	කොට|කොටස්|කොටස|කොච්චර|කොටි
-D	classical	uzdh	0	උණ්ඩ|උන්‍ද|උඳ
-D	classical	uzdh	1	උණ්ඩ|උන්‍දැ|උන්‍දෑ|උන්‍දැට|උඳුවප්
-D	classical	zhG	0	ඥ්ඝ්
-D	classical	zhG	1	
-D	classical	zdho	0	දෝ|ඩො|ඩෝ|දො
-D	classical	zdho	1	ඩොලර්|දොර|දොස්තර|ඩොලරය|දොස්
-D	classical	Vsh	0	ව්ශ්
-D	classical	Vsh	1	
 R	rakaransaya_u	අං	අං
 R	rakaransaya_u	අංගයක්	අංගයක්
 R	rakaransaya_u	අංගුත්තර	අංගුත්තර
@@ -95753,6 +95779,36 @@ D	rakaransaya_u	sinh	0	සින්හ්
 D	rakaransaya_u	sinh	1	සිංහල|සිංහලෙන්|සිංහ|සිංහලයන්|සිංහලයා
 D	rakaransaya_u	vidy	0	විද්‍ය්
 D	rakaransaya_u	vidy	1	විද්‍යුත්|විද්‍යා|විද්‍යාව|විද්‍යාල
+D	rakaransaya_u	a	0	අ
+D	rakaransaya_u	a	1	ආකාරය|ආගමික|ආකාරයට|අගය|අගමැති
+D	rakaransaya_u	A	0	ඇ|ඒ|එ
+D	rakaransaya_u	A	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	rakaransaya_u	ae	0	ඇ|ඒ|එ
+D	rakaransaya_u	ae	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	rakaransaya_u	Aa	0	ඈ|ඒ|එ
+D	rakaransaya_u	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	rakaransaya_u	aee	0	ඈ|ඒ|එ
+D	rakaransaya_u	aee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	rakaransaya_u	R	0	ඍ|රු|රූ
+D	rakaransaya_u	R	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	rakaransaya_u	RR	0	ඍ|රු|රූ
+D	rakaransaya_u	RR	1	රුපියල්|රු|රූප|රුවන්|රූපවාහිනී
+D	rakaransaya_u	e	0	ඒ|එ
+D	rakaransaya_u	e	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	rakaransaya_u	ee	0	ඒ|එ
+D	rakaransaya_u	ee	1	ඒ|එක|එකක්|ඒක|එක්ක
+D	rakaransaya_u	E	0	ඓ|අයි|ආයි
+D	rakaransaya_u	E	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	rakaransaya_u	o	0	ඕ|ඔ
+D	rakaransaya_u	o	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	rakaransaya_u	O	0	ඔ|ඕ
+D	rakaransaya_u	O	1	ඔය|ඔබ|ඕන|ඔන්න|ඔබට
+D	rakaransaya_u	Au	0	ඖ|අවු
+D	rakaransaya_u	Au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
+D	rakaransaya_u	ai	0	අයි|ආයි
+D	rakaransaya_u	ai	1	අයියා|අයිතිය|අයි|අයියේ|ඓතිහාසික
+D	rakaransaya_u	au	0	අවු
+D	rakaransaya_u	au	1	අවුරුදු|අවුලක්|ඖෂධ|අවුරුද්ද|අවුල්
 D	rakaransaya_u	thaaththaa	0	තාත්තා|තාත්ත
 D	rakaransaya_u	thaaththaa	1	තත්ත්වය|තාත්තා|තත්ත්වයක්|තත්ත්වයට|තාත්ත
 D	rakaransaya_u	oyaa	0	ඔයා|ඔය|ඕය
@@ -96513,8 +96569,6 @@ D	rakaransaya_u	aOO	0	ආවෝ|අවෝ
 D	rakaransaya_u	aOO	1	ආවොත්|අවොත්|ආවෝ
 D	rakaransaya_u	Dzdh	0	දණ්ඩ|දාන්ඩ|ඩඳ
 D	rakaransaya_u	Dzdh	1	දඬුවම්|දඬුවම|දඬුවමක්|දඬු|දණ්ඩ
-D	rakaransaya_u	Aa	0	ඒ|එ|ඈ
-D	rakaransaya_u	Aa	1	ඒ|එක|එකක්|ඒක|එක්ක
 D	rakaransaya_u	zhe	0	ඥෙ
 D	rakaransaya_u	zhe	1	
 D	rakaransaya_u	zdaee	0	දෑ|දේ|දෙ|දැ|ඩේ
@@ -96863,31 +96917,3 @@ D	rakaransaya_u	CE	0	කයි|ඛෛ
 D	rakaransaya_u	CE	1	කායික|කයි|කයිවාරු|කයිය|කයිට්ස්
 D	rakaransaya_u	Dhkh	0	ඪ්ඛ්
 D	rakaransaya_u	Dhkh	1	
-D	rakaransaya_u	yo	0	යෝ|යො
-D	rakaransaya_u	yo	1	යොමු|යොදා|යෝජනා|යෝජනාව|යොදවා
-D	rakaransaya_u	qph	0	ද්ඵ්
-D	rakaransaya_u	qph	1	
-D	rakaransaya_u	Gii	0	ගී|ගි|ඝී
-D	rakaransaya_u	Gii	1	ගිය|ගිහින්|ගියා|ගියේ|ගිනි
-D	rakaransaya_u	khW	0	ඛ්ව්
-D	rakaransaya_u	khW	1	ක්වොන්ටම්|ක්වූ|ක්වාන්|ක්ව|ක්වාලාලම්පූර්
-D	rakaransaya_u	Up	0	උප්
-D	rakaransaya_u	Up	1	උපදෙස්|උපන්|උපරිම|උපකරණ|උප
-D	rakaransaya_u	fph	0	ෆ්ඵ්
-D	rakaransaya_u	fph	1	
-D	rakaransaya_u	jhzh	0	ඣ්ඥ්
-D	rakaransaya_u	jhzh	1	
-D	rakaransaya_u	BJ	0	බ්ඣ්
-D	rakaransaya_u	BJ	1	
-D	rakaransaya_u	aeeph	0	ඇප්|ඈඵ්
-D	rakaransaya_u	aeeph	1	එපා|ඇප|ඇපල්|එපැයි|එපමණක්
-D	rakaransaya_u	khOo	0	කෝ|කො|ඛෝ
-D	rakaransaya_u	khOo	1	කොට|කොටස්|කොටස|කොච්චර|කොටි
-D	rakaransaya_u	uzdh	0	උණ්ඩ|උන්ද|උඳ
-D	rakaransaya_u	uzdh	1	උණ්ඩ|උන්දැ|උන්දෑ|උන්දැට|උඳුවප්
-D	rakaransaya_u	zhG	0	ඥ්ඝ්
-D	rakaransaya_u	zhG	1	
-D	rakaransaya_u	zdho	0	දෝ|ඩො|ඩෝ|දො
-D	rakaransaya_u	zdho	1	ඩොලර්|දොර|දොස්තර|ඩොලරය|දොස්
-D	rakaransaya_u	Vsh	0	ව්ශ්
-D	rakaransaya_u	Vsh	1	
