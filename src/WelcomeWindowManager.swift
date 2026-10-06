@@ -18,6 +18,20 @@ import SwiftUI
         }
     }
 
+    /// Centres a window on the display the pointer is on (the one in use), every time it is shown.
+    /// `NSWindow.center()` puts windows a little above the middle, and only when they are created.
+    private func centerOnActiveScreen(_ window: NSWindow) {
+        window.layoutIfNeeded()
+        let mouse = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main else {
+            window.center()
+            return
+        }
+        let area = screen.visibleFrame
+        let size = window.frame.size
+        window.setFrameOrigin(NSPoint(x: (area.midX - size.width / 2).rounded(), y: (area.midY - size.height / 2).rounded()))
+    }
+
     private func restoreAccessoryActivationIfPossible() {
         guard window == nil, phoneticGuideWindow == nil, settingsWindow == nil else { return }
         if NSApp.activationPolicy() != .accessory {
@@ -48,6 +62,7 @@ import SwiftUI
         ensureVisibleAppActivation()
 
         if let window = window {
+            centerOnActiveScreen(window)
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -83,15 +98,7 @@ import SwiftUI
         
         self.window = newWindow
         
-        // Exact mathematical centering using known 500x500 size
-        if let screen = NSScreen.main {
-            let screenRect = screen.visibleFrame
-            let x = screenRect.origin.x + (screenRect.width - 500) / 2
-            let y = screenRect.origin.y + (screenRect.height - 500) / 2
-            newWindow.setFrameOrigin(NSPoint(x: x, y: y))
-        } else {
-            newWindow.center()
-        }
+        centerOnActiveScreen(newWindow)
 
         newWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -107,6 +114,7 @@ import SwiftUI
         ensureVisibleAppActivation()
 
         if let window = phoneticGuideWindow {
+            centerOnActiveScreen(window)
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -141,7 +149,7 @@ import SwiftUI
         
         window.contentViewController = NSHostingController(rootView: guideView)
         window.delegate = self
-        window.center()
+        centerOnActiveScreen(window)
         phoneticGuideWindow = window
         
         // Setup initial state for animation
@@ -196,6 +204,8 @@ import SwiftUI
 
         if let window = settingsWindow {
             (settingsModel as? SettingsModel)?.reload()
+            if window.isMiniaturized { window.deminiaturize(nil) }
+            centerOnActiveScreen(window)
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -203,7 +213,7 @@ import SwiftUI
 
         let model = SettingsModel()
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 560),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -213,7 +223,7 @@ import SwiftUI
         window.isReleasedWhenClosed = false
         window.contentViewController = NSHostingController(rootView: SettingsView(model: model))
         window.delegate = self
-        window.center()
+        centerOnActiveScreen(window)
         settingsWindow = window
         settingsModel = model
 

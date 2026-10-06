@@ -185,7 +185,7 @@ private struct GeneralSettings: View {
                 }
             }
             SettingsSection("Updates") {
-                SettingsButtonRow("Check for Updates", "Akshara checks GitHub for new releases about once an hour.",
+                SettingsButtonRow("Check for Updates", "Akshara checks GitHub for new releases once a day.",
                                   systemImage: "arrow.triangle.2.circlepath") {
                     AutoUpdater.shared().checkForUpdatesManually()
                 }
@@ -268,7 +268,7 @@ private struct AboutSettings: View {
         DocumentSection("On your Mac", "Typing stays on your Mac. Akshara does not send keystrokes, suggestions or analytics anywhere."),
         DocumentSection("Input method access", "Like every macOS input method, Akshara receives the keys you type while one of its "
             + "input sources is selected, to turn them into Sinhala. It does not store or log them."),
-        DocumentSection("Network", "The only network requests are update checks: about once an hour Akshara asks GitHub for the "
+        DocumentSection("Network", "The only network requests are update checks: once a day at most, Akshara asks GitHub for the "
             + "latest akshara-mac release, and it downloads the installer only when you choose to install an update. No typed "
             + "text or personal data is sent."),
         DocumentSection("Predictions", "Word suggestions use a compact word list bundled with the app. Akshara does not learn "
