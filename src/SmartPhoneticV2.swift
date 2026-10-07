@@ -11,7 +11,7 @@ import Foundation
 /// Input is read as Unicode scalars, like the reference's Python strings: a Swift `Character` would join a
 /// consonant and its vowel sign into one grapheme.
 enum SmartPhoneticV2 {
-    /// The reference's options, all off by default (`to_sinhala(..., archaic=, repaya_zwj=, classical=, rakaransaya_u=)`).
+    /// The reference's options, all off by default (`to_sinhala(..., archaic=, repaya_zwj=, classical=, rakaransaya_u=, retroflex_d=)`).
     struct Options: Equatable {
         /// Allow ඏ ඐ ෟ ෳ ඎ ඁ ඦ and touching letters (R-14).
         var archaic = false
@@ -21,6 +21,8 @@ enum SmartPhoneticV2 {
         var classical = false
         /// Write C + r + u/uu as rakaransaya + ු/ූ (ක්‍රූර) instead of the usual ෘ/ෲ (කෲර) (R-06).
         var rakaransayaU = false
+        /// Write d as ඩ and dh as ද, the older keyboard convention (R-01).
+        var retroflexD = false
     }
 
     static let hal = "\u{0DCA}"
@@ -40,6 +42,8 @@ enum SmartPhoneticV2 {
     ]
     private static let front: Set<String> = ["i", "ii", "e", "ee", "ae", "aee", "ai"]
     private static let back: Set<String> = ["u", "uu", "o", "oo", "au"]
+    /// R-01 retroflexD: d ඩ · dh ද · D ඪ · Dh ධ · zd ඬ (q, dhh, zdh, zq and zD keep their letters).
+    private static let retroflexD: [String: String] = ["d": "ඩ", "dh": "ද", "D": "ඪ", "Dh": "ධ", "zd": "ඬ"]
     /// G-HC-15, R-10: the classical bandi akuru pairs, as the two letters joined.
     static let bandi: Set<String> = [
         "කෂ", "කව", "ගධ", "ටඨ", "තථ", "තව", "දධ", "දව", "නථ", "නද", "නධ", "නව", "ඤච",
@@ -156,7 +160,13 @@ enum SmartPhoneticV2 {
     private enum State { case vowel, anusvara, hal }
 
     static func transliterate(_ source: String, options: Options = Options()) -> String {
-        let tokens = tokenize(Array(source.unicodeScalars), archaic: options.archaic)
+        var tokens = tokenize(Array(source.unicodeScalars), archaic: options.archaic)
+        if options.retroflexD {
+            tokens = tokens.map { (token: Token) -> Token in
+                if case let .consonant(_, seq) = token, let letter = Self.retroflexD[seq] { return .consonant(letter: letter, seq: seq) }
+                return token
+            }
+        }
         var out: [String] = []
         out.reserveCapacity(tokens.count * 2)
         var state: State? = nil         // nil: word start

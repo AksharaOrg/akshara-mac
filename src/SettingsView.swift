@@ -9,6 +9,7 @@ final class SettingsModel: ObservableObject {
     private let preferences = Preferences.shared
 
     @Published var grammarCorrect = false { didSet { phonetic.enabled = grammarCorrect } }
+    @Published var retroflexD = false { didSet { phonetic.retroflexD = retroflexD } }
     @Published var rakaransayaU = false { didSet { phonetic.rakaransayaU = rakaransayaU } }
     @Published var repayaZwj = false { didSet { phonetic.repayaZwj = repayaZwj } }
     @Published var classical = false { didSet { phonetic.classical = classical } }
@@ -23,6 +24,7 @@ final class SettingsModel: ObservableObject {
     /// Picks up changes made elsewhere (the input menu's Grammar-correct Smart Phonetic, System Settings).
     func reload() {
         if grammarCorrect != phonetic.enabled { grammarCorrect = phonetic.enabled }
+        if retroflexD != phonetic.retroflexD { retroflexD = phonetic.retroflexD }
         if rakaransayaU != phonetic.rakaransayaU { rakaransayaU = phonetic.rakaransayaU }
         if repayaZwj != phonetic.repayaZwj { repayaZwj = phonetic.repayaZwj }
         if classical != phonetic.classical { classical = phonetic.classical }
@@ -35,6 +37,7 @@ final class SettingsModel: ObservableObject {
     /// Restores every setting to its default, as Android's "Reset keyboard settings" does.
     func reset() {
         grammarCorrect = true
+        retroflexD = false
         rakaransayaU = false
         repayaZwj = false
         classical = false
@@ -99,10 +102,18 @@ private struct TypingSettings: View {
             SettingsSection("Smart Phonetic") {
                 SettingsToggle(
                     "Grammar-correct Smart Phonetic",
-                    "Spells by the rules of Sinhala orthography: d types ද, D types ඩ. Space picks the dictionary "
-                        + "spelling (honda → හොඳ); Backspace right after undoes it. Turn off for the classic Smart Phonetic.",
+                    "Spells by the rules of Sinhala orthography. Space picks the dictionary spelling (honda → හොඳ); "
+                        + "Backspace right after undoes it. Turn off for the classic Smart Phonetic.",
                     isOn: $model.grammarCorrect
                 )
+                SettingsToggle(
+                    "Type ඩ with d",
+                    "On: d types ඩ and dh types ද, as on older Singlish keyboards (D ඪ, Dh ධ). "
+                        + "Off: d types ද, dh ධ, D ඩ.",
+                    isOn: $model.retroflexD
+                )
+                .disabled(!model.grammarCorrect)
+                .opacity(model.grammarCorrect ? 1 : 0.5)
                 Link("How grammar-correct spelling works", destination: AksharaLinks.romanization)
                     .font(.callout)
             }
