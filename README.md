@@ -64,7 +64,9 @@ Smart Phonetic spells Sinhala the grammar-correct way: by the rules of Sinhala o
 engine as the Akshara Android keyboard. Hal, yansaya, rakaransaya and ං are written for you, and a bundled
 word list picks the dictionary spelling of letters that sound alike.
 
-The classic Smart Phonetic keys (`d` ➔ `ඩ`, `dh` ➔ `ද` …) are one switch away: turn off **Grammar-correct
+`d` types `ද` and `dh` types `ධ`, as most people write Sinhala in Latin letters. If your fingers know the older
+Singlish keys (`d` ➔ `ඩ`, `dh` ➔ `ද`), turn on **Type ඩ with d** in **Settings…**: the grammar rules and the
+dictionary stay the same. The classic Smart Phonetic is one switch away: turn off **Grammar-correct
 Smart Phonetic** in the input menu or in **Settings…**.
 
 #### 🔹 Vowels (ස්වර)
@@ -122,7 +124,8 @@ A sanyaka letter never starts a word, so `zga` types `ග`; inside a word, `kazd
 - **Space picks the dictionary spelling** of letters that sound alike: `honda` ➔ `හොඳ`, `bada` ➔ `බඩ`,
   `lamaya` ➔ `ළමයා`. **Backspace** right after puts back what you typed.
 - **Suggestions** under the word show sound-alikes and completions; pick one with `1`–`5` or a click.
-- **Settings…** (input menu) has the spelling options: rakaransaya + u (`kruura` ➔ `ක්‍රූර`), joined repaya
+- **Settings…** (input menu) has **Type ඩ with d** (the older Singlish keys: `d` ➔ `ඩ`, `dh` ➔ `ද`) and the
+  spelling options: rakaransaya + u (`kruura` ➔ `ක්‍රූර`), joined repaya
   (`කර්‍ම`), classical conjuncts (`අක්‍ෂර`) and archaic letters, plus suggestions and double-space period.
 - **Double Space**: Pressing `Space` twice inserts a full stop (`. `).
 

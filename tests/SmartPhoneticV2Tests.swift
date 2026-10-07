@@ -28,6 +28,7 @@ struct SmartPhoneticV2Tests {
         case "repaya_zwj": options.repayaZwj = true
         case "classical": options.classical = true
         case "rakaransaya_u": options.rakaransayaU = true
+        case "retroflex_d": options.retroflexD = true
         default: fatalError("unknown option \(name)")
         }
         return options
@@ -90,6 +91,12 @@ struct SmartPhoneticV2Tests {
         styled.repayaZwj = true
         expect("kruura (rakaransaya_u)", SmartPhoneticV2.transliterate("kruura", options: styled), "ක්\(z)රූර")
         expect("karma (repaya_zwj)", SmartPhoneticV2.transliterate("karma", options: styled), "කර්\(z)ම")
+        var singlish = SmartPhoneticV2.Options()
+        singlish.retroflexD = true
+        expect("bada (retroflex_d)", SmartPhoneticV2.transliterate("bada", options: singlish), "බඩ")
+        expect("kohomadha (retroflex_d)", SmartPhoneticV2.transliterate("kohomadha", options: singlish), "කොහොමද")
+        expect("Dharmaya (retroflex_d)", SmartPhoneticV2.transliterate("Dharmaya", options: singlish), "ධර්මය")
+        expect("da (default)", SmartPhoneticV2.transliterate("da"), "ද")
         expect("honda", lexicon.candidates("honda").first ?? "", "හොඳ")
         expect("kramaya candidate", lexicon.candidates("kramaya").first ?? "", "ක්\(z)රමය")
         expect("dumriya candidate", lexicon.candidates("dumriya").first ?? "", "දුම්රිය")
@@ -126,9 +133,11 @@ struct SmartPhoneticV2Tests {
         expect("kruura: style kept", service.choice(forRoman: "kruura") ?? "nil", "ක්\(z)රූර")
         expect("karma: style kept", service.choice(forRoman: "karma") ?? "nil", "කර්\(z)ම")
         service.enabled = false
+        service.retroflexD = true
         let reloaded = SmartPhoneticService(defaults: defaults)
-        expect("settings persist", "\(reloaded.enabled) \(reloaded.rakaransayaU) \(reloaded.repayaZwj) \(reloaded.classical)",
-               "false true true false")
+        expect("settings persist",
+               "\(reloaded.enabled) \(reloaded.rakaransayaU) \(reloaded.repayaZwj) \(reloaded.classical) \(reloaded.retroflexD)",
+               "false true true false true")
 
         if failed { exit(1) }
         print("Smart Phonetic v2 tests passed")

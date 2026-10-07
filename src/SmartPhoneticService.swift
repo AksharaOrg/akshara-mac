@@ -16,6 +16,7 @@ final class SmartPhoneticService: NSObject {
     private static let repayaZwjKey = "SmartPhoneticV2RepayaZwj"
     private static let classicalKey = "SmartPhoneticV2Classical"
     private static let rakaransayaUKey = "SmartPhoneticV2RakaransayaU"
+    private static let retroflexDKey = "SmartPhoneticV2RetroflexD"
     /// How many whole words and completions to consider before ranking (Android's PHONETIC_POOL).
     private static let pool = 12
 
@@ -35,9 +36,12 @@ final class SmartPhoneticService: NSObject {
     @objc var repayaZwj: Bool { didSet { save(repayaZwj, Self.repayaZwjKey) } }
     @objc var classical: Bool { didSet { save(classical, Self.classicalKey) } }
     @objc var rakaransayaU: Bool { didSet { save(rakaransayaU, Self.rakaransayaUKey) } }
+    /// Off: d types ද, dh ධ, D ඩ. On: the older keyboard convention, d types ඩ and dh ද.
+    @objc var retroflexD: Bool { didSet { save(retroflexD, Self.retroflexDKey) } }
 
     var options: SmartPhoneticV2.Options {
-        SmartPhoneticV2.Options(archaic: archaic, repayaZwj: repayaZwj, classical: classical, rakaransayaU: rakaransayaU)
+        SmartPhoneticV2.Options(archaic: archaic, repayaZwj: repayaZwj, classical: classical, rakaransayaU: rakaransayaU,
+                                retroflexD: retroflexD)
     }
 
     /// True once the word list is ready.
@@ -50,6 +54,7 @@ final class SmartPhoneticService: NSObject {
         repayaZwj = defaults.bool(forKey: Self.repayaZwjKey)
         classical = defaults.bool(forKey: Self.classicalKey)
         rakaransayaU = defaults.bool(forKey: Self.rakaransayaUKey)
+        retroflexD = defaults.bool(forKey: Self.retroflexDKey)
         super.init()
     }
 
